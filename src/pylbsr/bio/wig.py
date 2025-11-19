@@ -2,7 +2,7 @@ import glob
 import os
 import string
 
-import pybigwig as pbw
+import pyBigWig as pbw
 
 
 class LazyLoaderBigWig:
