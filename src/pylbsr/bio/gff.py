@@ -1,12 +1,21 @@
 import os
 
-import pandas as pd
-import pandera.pandas as pa
-from pandera.pandas import DataFrameModel, Field, check
-from pandera.typing import DataFrame, Series
-
 # Disable automatic backend detection for pandera that loads dask.
 os.environ.setdefault("PANDERA_BACKEND", "pandas")
+import sys
+
+sys.modules["dask"] = None
+sys.modules["dask.array"] = None
+sys.modules["dask.dataframe"] = None
+sys.modules["modin"] = None
+sys.modules["pyspark"] = None
+
+import pandas as pd
+import pandera as pa
+import pandera.pandas as pa
+from pandera import DataFrameModel, Field, check
+from pandera.pandas import DataFrameModel, Field, check
+from pandera.typing import DataFrame, Series
 
 
 class GFFSchema(DataFrameModel):
