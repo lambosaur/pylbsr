@@ -5,6 +5,9 @@ import pandera.pandas as pa
 from pandera.pandas import DataFrameModel, Field, check
 from pandera.typing import DataFrame, Series
 
+# Disable automatic backend detection for pandera that loads dask.
+os.environ.setdefault("PANDERA_BACKEND", "pandas")
+
 
 class GFFSchema(DataFrameModel):
     """Pandera schema for GFF3 files."""
