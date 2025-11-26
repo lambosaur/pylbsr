@@ -30,11 +30,11 @@ class GFFSchema(DataFrameModel):
     # TODO: what about "-1" and "+1" or "fwd" and "rev" encodings?
     @check("strand", element_wise=True)
     def valid_strand(cls, s):
-        return s is None or s in {"+", "-", "."}
+        return pd.isna(s) or s in {"+", "-", "."}
 
     @check("phase", element_wise=True)
     def valid_phase(cls, s):
-        return s is None or s in {"0", "1", "2", "."}
+        return pd.isna(s) or s in {"0", "1", "2", "."}
 
     # --- dataframe-level checks -------------------------------------------
     @check
@@ -118,7 +118,7 @@ def write_gff(
             mode="a",
         )
 
-class ExtendedGFF(pd.DataFrame):
+class ExtendedGFF:
     def __init__(self, gff: pd.DataFrame, attributes: pd.DataFrame):
         self._gff = gff
         self._attributes = attributes
