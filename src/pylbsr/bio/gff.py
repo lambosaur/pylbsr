@@ -141,6 +141,7 @@ class ExtendedGFF(pd.DataFrame):
     def extended(self) -> pd.DataFrame:
         return self._extended
 
+    @classmethod
     def from_filepath(cls, filepath: os.PathLike) -> "ExtendedGFF":
         gff = read_gff(filepath)
         attributes = split_attributes(gff["attributes"])
