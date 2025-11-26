@@ -4,12 +4,11 @@ import os
 os.environ.setdefault("PANDERA_BACKEND", "pandas")
 import sys
 
-sys.modules["dask"] = None
-sys.modules["dask.array"] = None
-sys.modules["dask.dataframe"] = None
-sys.modules["modin"] = None
-sys.modules["pyspark"] = None
-
+# sys.modules["dask"] = None
+# sys.modules["dask.array"] = None
+# sys.modules["dask.dataframe"] = None
+# sys.modules["modin"] = None
+# sys.modules["pyspark"] = None
 import pandas as pd
 import pandera as pa
 import pandera.pandas as pa

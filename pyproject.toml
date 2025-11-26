@@ -21,7 +21,6 @@ readme = {file = "README.md", content-type = "text/markdown"}
 dependencies = [
     "numpy>=1.23",
     "scipy>=1.9",
-    "pandas>=1.5",
     "matplotlib>=3.5",
     "seaborn>=0.12",
     "jupyterlab>=3.4",
@@ -34,6 +33,11 @@ dependencies = [
     "tensorflow >=2.16",
     "torch >=2.5",
     "tqdm >=4.67.1,<5",
+    "pandas>=2.0",
+    "pandera>=1.10",
+    "modin>=0.28",
+    "dask>=2023.1.0",
+
 ]
 
 [project.optional-dependencies]
