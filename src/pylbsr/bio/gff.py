@@ -93,7 +93,10 @@ def read_gff(filepath: os.PathLike, validate: bool = False) -> DataFrame[GFFSche
     if validate:
         df = GFFSchema.validate(df)
     else:
-        df = df.astype(GFFSchema.to_dtypes())
+        # Manual type conversion.
+        df["start"] = df["start"].astype(int)
+        df["end"] = df["end"].astype(int)
+        df["score"] = pd.to_numeric(df["score"], errors="coerce")
 
     return df
 
