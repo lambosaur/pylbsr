@@ -144,9 +144,6 @@ class ExtendedGFF:
             [gff.reset_index(drop=True), attributes.reset_index(drop=True)], axis=1
         )
 
-        # Initialize the parent class with the extended dataframe.
-        super().__init__(self._extended)
-
     @property
     def gff(self) -> pd.DataFrame:
         return self._gff
