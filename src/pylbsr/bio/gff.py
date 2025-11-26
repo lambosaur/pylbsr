@@ -57,7 +57,7 @@ class GFFSchema(DataFrameModel):
         strict = True  # no extra columns allowed
 
 
-def read_gff(filepath: os.PathLike) -> DataFrame[GFFSchema]:
+def read_gff(filepath: os.PathLike, validate: bool = False) -> DataFrame[GFFSchema]:
     gff_columns = [
         "seqid",
         "source",
@@ -90,7 +90,11 @@ def read_gff(filepath: os.PathLike) -> DataFrame[GFFSchema]:
     for column, nullable_values in columns_to_nullable_values.items():
         df[column] = df[column].replace(nullable_values, pd.NA)
 
-    df = GFFSchema.validate(df)
+    if validate:
+        df = GFFSchema.validate(df)
+    else:
+        df = df.astype(GFFSchema.to_dtypes())
+
     return df
 
 
@@ -153,8 +157,8 @@ class ExtendedGFF:
         return self._extended
 
     @classmethod
-    def from_filepath(cls, filepath: os.PathLike) -> "ExtendedGFF":
-        gff = read_gff(filepath)
+    def from_filepath(cls, filepath: os.PathLike, validate: bool = False) -> "ExtendedGFF":
+        gff = read_gff(filepath, validate=validate)
         attributes = split_attributes(gff["attributes"])
         return cls(gff, attributes)
 
