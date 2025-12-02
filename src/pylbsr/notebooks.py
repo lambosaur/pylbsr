@@ -189,11 +189,11 @@ def enable_cell_timing_metadata(show: bool = False):
     metadata_key = "execution_time_s"
 
     def pre_run_cell(info):
-        nonlocal _t_start
+        global _t_start
         _t_start = time.time()
 
     def post_run_cell(result):
-        nonlocal _t_start
+        global _t_start
 
         if not _t_start:
             return
