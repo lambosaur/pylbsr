@@ -1,5 +1,8 @@
 import os
+import time
 from pathlib import Path
+
+from IPython import get_ipython
 
 
 def find_project_root_from_notebook_path(expected_notebook_rel: os.PathLike) -> Path:
@@ -132,3 +135,89 @@ def assert_notebook_working_dir(expected_local_file: os.PathLike) -> Path:
                 raise ValueError("Unexpected error: found_file is not relative to cwd")
 
 
+_t_start = 0.0
+_registered = False
+
+
+def enable_cell_timing_print():
+    """Enable timing of Jupyter notebook cells, **printed** in the cell's output."""
+    global _registered, _t_start
+
+    if _registered:
+        return  # avoid duplicate registrations
+
+    ip = get_ipython()
+    if ip is None:
+        return  # not in a notebook
+
+    def pre_run_cell(info):
+        global _t_start
+        _t_start = time.time()
+
+    def post_run_cell(result):
+        global _t_start
+        if _t_start:
+            dt = time.time() - _t_start
+            print(f"[Saved timing] Cell runtime: {dt:.2f} s")
+        _t_start = 0.0
+
+    ip.events.register("pre_run_cell", pre_run_cell)
+    ip.events.register("post_run_cell", post_run_cell)
+
+    _registered = True
+
+
+_registered_metadata = False
+
+
+def enable_cell_timing_metadata(show: bool = False):
+    """Record per-cell run time into cell metadata.
+
+    Args:
+        show : bool
+            If True, also prints a small line (⏱ X.XX s) in cell output.
+    """
+    global _registered_metadata, _t_start
+
+    if _registered_metadata:
+        return
+
+    ip = get_ipython()
+    if ip is None:
+        return
+
+    metadata_key = "execution_time_s"
+
+    def pre_run_cell(info):
+        nonlocal _t_start
+        _t_start = time.time()
+
+    def post_run_cell(result):
+        nonlocal _t_start
+
+        if not _t_start:
+            return
+
+        dt = time.time() - _t_start
+        _t_start = 0.0
+
+        # --- attach metadata ---
+        cell = ip.execution_count - 1  # this cell index
+        nb = ip.kernel.shell.parent  # Jupyter NotebookApp object
+        # VSCode+Jupyter keeps the notebook JSON in shell.parent.notebook
+        try:
+            cell_obj = nb.notebook.cells[cell]
+            # Use namespaced_variable to register metadata.
+            cell_obj.setdefault("metadata", {})
+            cell_obj["metadata"][metadata_key] = round(dt, 3)
+        except Exception:
+            # fallback: silently ignore if structure unavailable
+            pass
+
+        if show:
+            print(f"⏱ {dt:.2f} s")
+
+    ip.events.register("pre_run_cell", pre_run_cell)
+    ip.events.register("post_run_cell", post_run_cell)
+
+    _registered_metadata = True
