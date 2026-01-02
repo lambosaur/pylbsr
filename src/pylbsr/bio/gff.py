@@ -1,8 +1,9 @@
+"""Module for reading and writing GFF3 files with validation using Pandera."""
+
 import os
 
 # Disable automatic backend detection for pandera that loads dask.
 os.environ.setdefault("PANDERA_BACKEND", "pandas")
-import sys
 
 # sys.modules["dask"] = None
 # sys.modules["dask.array"] = None
@@ -15,6 +16,7 @@ import pandera.pandas as pa
 from pandera import DataFrameModel, Field, check
 from pandera.pandas import DataFrameModel, Field, check
 from pandera.typing import DataFrame, Series
+from typing_extensions import Self
 
 
 class GFFSchema(DataFrameModel):
@@ -40,24 +42,26 @@ class GFFSchema(DataFrameModel):
 
     # TODO: what about "-1" and "+1" or "fwd" and "rev" encodings?
     @check("strand", element_wise=True)
-    def valid_strand(cls, s):
+    def _valid_strand(cls, s: str) -> bool:
         return pd.isna(s) or s in {"+", "-", "."}
 
     @check("phase", element_wise=True)
-    def valid_phase(cls, s):
+    def _valid_phase(cls, s: str) -> bool:
         return pd.isna(s) or s in {"0", "1", "2", "."}
 
     # --- dataframe-level checks -------------------------------------------
     @check
-    def end_ge_start(cls, df: pd.DataFrame) -> pd.Series:
+    def _end_ge_start(cls, df: pd.DataFrame) -> pd.Series:
         return df["end"] >= df["start"]
 
     class Config:
+        """Pandera configuration for GFFSchema."""
         coerce = True  # automatically cast types
         strict = True  # no extra columns allowed
 
 
 def read_gff(filepath: os.PathLike, validate: bool = False) -> DataFrame[GFFSchema]:
+    """Read a GFF3 file into a Pandas DataFrame."""
     gff_columns = [
         "seqid",
         "source",
@@ -102,7 +106,10 @@ def read_gff(filepath: os.PathLike, validate: bool = False) -> DataFrame[GFFSche
 
 
 def split_attributes(col: pd.Series, kv_sep: str = "=", field_sep: str = ";") -> pd.DataFrame:
-    def parse(s: str):
+    """Split the GFF attributes column into a DataFrame of key-value pairs."""
+
+    def parse(s: str) -> dict[str, str]:
+        """Parse a single GFF attributes string into a dictionary."""
         if not isinstance(s, str):
             return {}
         items = []
@@ -122,7 +129,8 @@ def split_attributes(col: pd.Series, kv_sep: str = "=", field_sep: str = ";") ->
 def write_gff(
     gff: pd.DataFrame,
     filepath: os.PathLike,
-):
+) -> None:
+    """Write a GFF dataframe to a GFF file."""
     # Write GFF file without header and index.
     # Write expected GFF identifier header.
     with open(filepath, "w") as f:
@@ -137,7 +145,10 @@ def write_gff(
         )
 
 class ExtendedGFF:
+    """Class representing a GFF file with split attributes."""
+
     def __init__(self, gff: pd.DataFrame, attributes: pd.DataFrame):
+        """Initialize an ExtendedGFF instance."""
         self._gff = gff
         self._attributes = attributes
         self._extended = pd.concat(
@@ -146,22 +157,35 @@ class ExtendedGFF:
 
     @property
     def gff(self) -> pd.DataFrame:
+        """Return the original GFF dataframe."""
         return self._gff
 
     @property
     def attributes(self) -> pd.DataFrame:
+        """Return the attributes dataframe."""
         return self._attributes
 
     @property
     def extended(self) -> pd.DataFrame:
+        """Return the extended GFF dataframe with split attributes."""
         return self._extended
 
     @classmethod
-    def from_filepath(cls, filepath: os.PathLike, validate: bool = False) -> "ExtendedGFF":
+    def from_filepath(cls, filepath: os.PathLike, validate: bool = False) -> Self:
+        """Create an ExtendedGFF instance from a GFF file."""
         gff = read_gff(filepath, validate=validate)
         attributes = split_attributes(gff["attributes"])
         return cls(gff, attributes)
 
-    def write(self, filepath: os.PathLike):
+    @classmethod
+    def from_gff(cls, gff: pd.DataFrame, validate: bool = False) -> Self:
+        """Create an ExtendedGFF instance from a GFF dataframe."""
+        if validate:
+            gff = GFFSchema.validate(gff)
+        attributes = split_attributes(gff["attributes"])
+        return cls(gff, attributes)
+
+    def write(self, filepath: os.PathLike) -> None:
+        """Write the GFF dataframe to a GFF file."""
         write_gff(self._gff, filepath)
 
