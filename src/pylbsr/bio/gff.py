@@ -10,9 +10,11 @@ os.environ.setdefault("PANDERA_BACKEND", "pandas")
 # sys.modules["dask.dataframe"] = None
 # sys.modules["modin"] = None
 # sys.modules["pyspark"] = None
+import numpy as np
 import pandas as pd
 import pandera as pa
 import pandera.pandas as pa
+import pybedtools as pbt
 from pandera import DataFrameModel, Field, check
 from pandera.pandas import DataFrameModel, Field, check
 from pandera.typing import DataFrame, Series
@@ -189,3 +191,80 @@ class ExtendedGFF:
         """Write the GFF dataframe to a GFF file."""
         write_gff(self._gff, filepath)
 
+
+def gff_transcript_segments_to_bed(gff: pd.DataFrame) -> pd.DataFrame:
+    """Produce a BED6 dataframe from a GFF transcript segments dataframe, including introns."""
+    assert "transcript_id" in gff.columns, 'Column "transcript_id" not found in GFF!'
+
+    # NOTE: we will use the "ID" column to identify unique features.
+    # This has a pre-established format "{FEATURE_TYPE}:{TRANSCRIPT_ID}[:{EXON_INDEX}]"
+    assert "ID" in gff.columns, "GFF must have an 'ID' column!"
+
+    assert "type" in gff.columns, "GFF must have a 'type' column!"
+    assert "transcript" in gff["type"].values, "GFF must have transcript annotations!"
+    assert gff["type"].value_counts().get("transcript", 0) == 1, (
+        "GFF must have exactly one transcript!"
+    )
+    # NOTE: wrong assertion `gff["type"].value_counts().get("exon", 0) > 1` for  single exon gffs.
+    assert "exon" in gff["type"].values, "GFF must have exon annotations!"
+
+    gff_transcript = gff.loc[lambda df: df["type"] == "transcript"]
+    gff_segments = (
+        gff.loc[lambda df: df["type"] != "transcript"]
+        .copy()
+        .sort_values(by=["start", "end"])
+        .reset_index(drop=True)
+    )
+
+    selected_columns_for_bed6_format = ["seqid", "start", "end", "ID", "score", "strand"]
+
+    # Extract the transcript
+    bed_transcript = gff_transcript.loc[:, selected_columns_for_bed6_format].assign(
+        start=lambda df: df["start"] - 1
+    )
+    # Extract the transcript ID
+    transcript_id = bed_transcript["ID"].values[0]
+
+    # Extract the segments (exons, UTRs, etc.)
+    bed_segments = gff_segments.loc[:, selected_columns_for_bed6_format].assign(
+        start=lambda df: df["start"] - 1
+    )
+
+    bt_transcript = pbt.BedTool.from_dataframe(bed_transcript)
+    bt_segments = pbt.BedTool.from_dataframe(bed_segments)
+
+    # Identify introns by subtracting exons from the transcript region.
+    bed_introns = (
+        bt_transcript.subtract(bt_segments, s=True)
+        .to_dataframe()
+        .assign(
+            name=f"intron:{transcript_id}",
+            score=np.nan,
+        )
+    )
+
+    # Merge all segments back
+    bed6_cols = ["chrom", "start", "end", "name", "score", "strand"]
+
+    # Create empty BED6 dataframe explicitly if no introns are found.
+    if bed_introns.shape[0] == 0:
+        bed_introns = pd.DataFrame(columns=bed6_cols)
+
+    bed = (
+        pd.concat(
+            [bed_segments.set_axis(bed6_cols, axis=1), bed_introns.set_axis(bed6_cols, axis=1)],
+            axis=0,
+        )
+        .sort_values(by=["start", "end"])
+        .reset_index(drop=True)
+    )
+
+    # Assert that the transcript coordinates match the min/max of the segments + introns.
+    assert bed["start"].min() == bed_transcript["start"].values[0], (
+        "Transcript start does not match min segment/intron start!"
+    )
+    assert bed["end"].max() == bed_transcript["end"].values[0], (
+        "Transcript end does not match max segment/intron end!"
+    )
+
+    return bed
