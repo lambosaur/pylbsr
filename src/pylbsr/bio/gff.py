@@ -10,6 +10,9 @@ os.environ.setdefault("PANDERA_BACKEND", "pandas")
 # sys.modules["dask.dataframe"] = None
 # sys.modules["modin"] = None
 # sys.modules["pyspark"] = None
+import warnings
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 import pandera as pa
@@ -19,6 +22,14 @@ from pandera import DataFrameModel, Field, check
 from pandera.pandas import DataFrameModel, Field, check
 from pandera.typing import DataFrame, Series
 from typing_extensions import Self
+
+
+@dataclass
+class GenomicInterval:
+    chrom: str
+    start: int
+    end: int
+    strand: str
 
 
 class GFFSchema(DataFrameModel):
@@ -268,3 +279,44 @@ def gff_transcript_segments_to_bed(gff: pd.DataFrame) -> pd.DataFrame:
     )
 
     return bed
+
+
+def get_transcript_boundaries_from_gff(gff: pd.DataFrame) -> GenomicInterval:
+    """Get the (1-based) genomic boundaries of a transcript from its GFF annotations.
+
+    From a provided GFF pandas dataframe, this function extracts the genomic boundaries,
+    either using the explicit "transcript" annotation, or by inferring them from the provided
+    segments (e.g., exons, UTRs, CDS, etc.).
+
+    In this second case, it is assumed the segments cover the entire transcript.
+    """
+    if gff["transcript_id"].nunique() > 1:
+        raise ValueError("GFF contains annotations for multiple transcripts!")
+
+    if "transcript" in gff["type"].values:
+        gff_transcript = gff.loc[lambda df: df["type"] == "transcript"]
+        if not gff.shape[0] == 1:
+            raise ValueError("GFF contains multiple transcript annotations!")
+
+        gff_transcript = gff_transcript.iloc[0, :]
+
+        transcript_boundaries = GenomicInterval(
+            chrom=gff_transcript["seqid"],
+            start=gff_transcript["start"],
+            end=gff_transcript["end"],
+            strand=gff_transcript["strand"],
+        )
+        return transcript_boundaries
+
+    else:
+        warnings.warn(
+            "GFF does not contain a transcript annotation; inferring boundaries from segments."
+        )
+
+        transcript_boundaries = GenomicInterval(
+            chrom=gff.iloc[0]["seqid"],
+            start=gff["start"].min(),
+            end=gff["end"].max(),
+            strand=gff.iloc[0]["strand"],
+        )
+        return transcript_boundaries
