@@ -1,3 +1,4 @@
+
 import glob
 import gzip
 import logging
@@ -5,12 +6,36 @@ import os
 import random
 import string
 import tempfile
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Generator, Iterable, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import torch
 from Bio import bgzf
+from dotmap import DotMap
+
+
+def sanitize_dotmap(dm: DotMap) -> DotMap:
+    """Recursively removes all keys starting with '_' from a DotMap.
+
+    Owing to tab completion features in REPL environments, DotMaps may get populated with
+    keys starting with '_'.  This function removes them all recursively.
+
+    Args:
+        dm (dotmap.DotMap): The DotMap to sanitize.
+
+    Return:
+        dotmap.DotMap: The sanitized DotMap.
+    """
+    keys_to_delete = [k for k in dm if k.startswith("_")]
+    for k in keys_to_delete:
+        del dm[k]
+    for k, v in dm.items():
+        if isinstance(v, DotMap):
+            sanitize_dotmap(v)
+    return dm
 
 
 def set_seed(seed: int = 42) -> None:
@@ -204,7 +229,30 @@ def get_open_func(filepath: os.PathLike) -> Callable:
 
 
 
-def chunked(lst: Iterable, n: int) -> Iterable:
+def chunked(lst: Sequence, n: int) -> Iterable:
         """Yield successive n-sized chunks from lst."""
         for i in range(0, len(lst), n):
             yield lst[i : i + n]
+
+
+@contextmanager
+def no_scientific_notation(precision: int = 6) -> Generator[None, None, None]:
+    """Suppress scientific notation temporarily for NumPy arrays and Pandas objects.
+
+    Params:
+        precision (int): Number of decimal places to display.
+    """
+    # Save old NumPy print options
+    old_np_opts = np.get_printoptions()
+    np.set_printoptions(suppress=True, precision=precision)
+
+    # Save old Pandas float format
+    old_pd_fmt = pd.get_option("display.float_format")
+    pd.set_option("display.float_format", f"{{:.{precision}f}}".format)
+
+    try:
+        yield
+    finally:
+        # Restore old settings
+        np.set_printoptions(**old_np_opts)
+        pd.set_option("display.float_format", old_pd_fmt)
