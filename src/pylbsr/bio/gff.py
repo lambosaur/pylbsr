@@ -137,7 +137,7 @@ def split_attributes(col: pd.Series, kv_sep: str = "=", field_sep: str = ";") ->
 
         return dict(items)
 
-    return pd.json_normalize(col.apply(parse))
+    return pd.json_normalize(list(col.apply(parse)))
 
 def write_gff(
     gff: pd.DataFrame,
@@ -320,3 +320,4 @@ def get_transcript_boundaries_from_gff(gff: pd.DataFrame) -> GenomicInterval:
             strand=gff.iloc[0]["strand"],
         )
         return transcript_boundaries
+
