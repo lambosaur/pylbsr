@@ -2,7 +2,12 @@ import os
 import time
 from pathlib import Path
 
-from IPython import get_ipython
+try:
+    from IPython import get_ipython
+except ImportError as e:
+    raise ImportError(
+        "This module is intended to be used within a Jupyter notebook environment."
+    ) from e
 
 
 def find_project_root_from_notebook_path(expected_notebook_rel: os.PathLike) -> Path:
@@ -170,6 +175,7 @@ def enable_cell_timing_print():
 _registered_metadata = False
 
 
+
 def enable_cell_timing_metadata(show: bool = False):
     """Record per-cell run time into cell metadata.
 
@@ -215,7 +221,9 @@ def enable_cell_timing_metadata(show: bool = False):
             pass
 
         if show:
-            print(f"⏱ {dt:.2f} s")
+            h, rem = divmod(int(dt), 3600)
+            m, s = divmod(rem, 60)
+            print(f"⏱ {dt:.2f} s ({h:02d}:{m:02d}:{s:02d})")
 
     ip.events.register("pre_run_cell", pre_run_cell)
     ip.events.register("post_run_cell", post_run_cell)

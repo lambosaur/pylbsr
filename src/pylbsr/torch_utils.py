@@ -1,7 +1,13 @@
 import logging
 
 import numpy as np
-import torch
+
+try:
+    import torch
+except ImportError as e:
+    raise ImportError(
+        "torch is required for pylbsr.torch_utils. Install with `pip install pylbsr[ml]`."
+    ) from e
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
