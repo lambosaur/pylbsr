@@ -295,7 +295,7 @@ def get_transcript_boundaries_from_gff(gff: pd.DataFrame) -> GenomicInterval:
 
     if "transcript" in gff["type"].values:
         gff_transcript = gff.loc[lambda df: df["type"] == "transcript"]
-        if not gff.shape[0] == 1:
+        if gff_transcript.shape[0] != 1:
             raise ValueError("GFF contains multiple transcript annotations!")
 
         gff_transcript = gff_transcript.iloc[0, :]
