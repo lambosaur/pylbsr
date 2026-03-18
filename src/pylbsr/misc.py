@@ -17,6 +17,13 @@ from Bio import bgzf
 from dotmap import DotMap
 
 
+def tryint(s):
+    try:
+        return int(s)
+    except ValueError:
+        return s
+
+
 def sanitize_dotmap(dm: DotMap) -> DotMap:
     """Recursively removes all keys starting with '_' from a DotMap.
 
