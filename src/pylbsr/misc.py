@@ -1,4 +1,5 @@
 
+import collections
 import glob
 import gzip
 import logging
@@ -15,6 +16,13 @@ import pandas as pd
 import torch
 from Bio import bgzf
 from dotmap import DotMap
+
+
+# recursively convert the nested defaultdicts to dicts so that they raise KeyError on missing keys instead of creating new nested defaultdicts
+def recursive_defaultdict_to_dict(d):
+    if isinstance(d, collections.defaultdict):
+        d = {k: recursive_defaultdict_to_dict(v) for k, v in d.items()}
+    return d
 
 
 def tryint(s):
