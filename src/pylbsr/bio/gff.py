@@ -245,14 +245,16 @@ def gff_transcript_segments_to_bed(gff: pd.DataFrame) -> pd.DataFrame:
     bt_segments = pbt.BedTool.from_dataframe(bed_segments)
 
     # Identify introns by subtracting exons from the transcript region.
-    bed_introns = (
-        bt_transcript.subtract(bt_segments, s=True)
-        .to_dataframe()
-        .assign(
-            name=f"intron:{transcript_id}",
-            score=np.nan,
+    strand = gff_transcript["strand"].values[0]
+    bed_introns = bt_transcript.subtract(bt_segments, s=True).to_dataframe().assign(score=np.nan)
+    if bed_introns.shape[0] > 0:
+        intron_order = (
+            bed_introns["start"].rank(method="first", ascending=(strand != "-")).astype(int)
         )
-    )
+        bed_introns["name"] = intron_order.map(lambda i: f"intron:{transcript_id}:{i}")
+    else:
+        bed_introns["name"] = pd.Series(dtype=str)
+
 
     # Merge all segments back
     bed6_cols = ["chrom", "start", "end", "name", "score", "strand"]
