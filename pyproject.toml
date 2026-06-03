@@ -38,6 +38,7 @@ dependencies = [
     "scipy>=1.9",
     "seaborn>=0.12",
     "tqdm >=4.67.1,<5",
+    "logomaker >=0.8",
 ]
 
 [project.optional-dependencies]
