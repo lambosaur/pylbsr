@@ -55,6 +55,9 @@ def sanitize_dotmap(dm: DotMap) -> DotMap:
 
 def set_seed(seed: int = 42) -> None:
     """Set seed to all possible random number generators."""
+    # Required by cuBLAS when torch.use_deterministic_algorithms(True) is active
+    # on CUDA < 12.x; harmless on newer stacks. Must be set before cuBLAS init.
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
