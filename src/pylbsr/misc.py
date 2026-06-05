@@ -71,6 +71,7 @@ def set_seed(seed: int = 42) -> None:
 def create_randomized_tmp_dir(parent_dir: os.PathLike | None = None) -> str:
     """Create a randomized temporary directory."""
     # Get the parent tmp dir where to create a randomized tmp dir.
+    parent_tmp_dir = None
 
     if parent_dir is not None:
         parent_tmp_dir = Path(parent_dir)
