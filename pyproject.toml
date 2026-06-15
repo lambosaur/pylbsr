@@ -37,6 +37,7 @@ dependencies = [
     "pysam >=0.23.3",
     "scipy>=1.9",
     "seaborn>=0.12",
+    "upsetplot>=0.9",
     "tqdm >=4.67.1,<5",
     "logomaker >=0.8",
 ]
