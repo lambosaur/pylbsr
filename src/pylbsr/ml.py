@@ -1,5 +1,6 @@
 """Misc utils for machine learning."""
 
+import warnings
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -69,7 +70,7 @@ class PRCresults:
             1 - (y_true == pd.Series(y_true).value_counts().idxmax()).sum() / y_true.shape[0]
         )
 
-        return cls(
+        result = cls(
             prec=prec,
             rec=rec,
             thresholds=precrec_thresholds,
@@ -77,6 +78,20 @@ class PRCresults:
             interp_prec=interp_prec,
             random_clf=rand_clf,
         )
+        result._y_true = np.array(y_true, dtype=float)
+        result._y_pred = np.array(y_pred, dtype=float)
+        if result.auc < rand_clf:
+            warnings.warn(
+                f"PRCresults AUPRC={result.auc:.3f} < random baseline={rand_clf:.3f} — "
+                "scores appear anti-correlated with labels. Call .invert() to flip.",
+                UserWarning,
+                stacklevel=2,
+            )
+        return result
+
+    def invert(self) -> "PRCresults":
+        """Return a new PRCresults computed with negated scores (flip anti-correlated scorer)."""
+        return self.__class__.from_ytrue_ypred(self._y_true, -self._y_pred, self.base_rec)
 
     @property
     def auc(self) -> float:
@@ -146,9 +161,23 @@ class ROCresults:
         interp_tpr: np.ndarray = np.interp(base_fpr, fpr, tpr)
         interp_tpr[0] = 0.0
 
-        return cls(
+        result = cls(
             fpr=fpr, tpr=tpr, thresholds=roc_thresholds, base_fpr=base_fpr, interp_tpr=interp_tpr
         )
+        result._y_true = np.array(y_true, dtype=float)
+        result._y_pred = np.array(y_pred, dtype=float)
+        if result.auc < 0.5:
+            warnings.warn(
+                f"ROCresults AUROC={result.auc:.3f} < 0.5 — scores appear "
+                "anti-correlated with labels. Call .invert() to flip.",
+                UserWarning,
+                stacklevel=2,
+            )
+        return result
+
+    def invert(self) -> "ROCresults":
+        """Return a new ROCresults computed with negated scores (flip anti-correlated scorer)."""
+        return self.__class__.from_ytrue_ypred(self._y_true, -self._y_pred, self.base_fpr)
 
     def plot(
         self, ax: plt.Axes | None = None, plot_params: dict[str, Any] | None = None
