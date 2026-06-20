@@ -57,7 +57,7 @@ class SliceConfig(BaseModel):
     def resolve_coordinates(self) -> Self:
         """Resolve coordinates depending on the selected mode."""
         if self.mode == SliceCoordinateSystem.ABSOLUTE and (
-            self.start is not None and self.end is not None
+            self.start is None or self.end is None
         ):
             raise ValueError("absolute mode requires start and end")
 
