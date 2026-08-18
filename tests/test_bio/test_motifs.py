@@ -358,6 +358,7 @@ def test_motif_to_biopython_motif_wrong_alphabet():
 def test_to_logomaker_df():
     motif = _make_motif(GenericMinimalTransfacMotif)
     df = motif.to_logomaker_df()
+    assert isinstance(df.index, pd.RangeIndex)
     assert df.index.name == "pos"
     assert list(df.index) == list(range(len(motif.matrix)))
     assert list(df.columns) == list(motif.matrix.columns)
