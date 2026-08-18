@@ -1,4 +1,8 @@
+import colorsys
+import zlib
+
 import matplotlib as mpl
+import matplotlib.colors
 import matplotlib.font_manager
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -67,3 +71,52 @@ def hex_luminance(hex_color: str) -> float:
     r, g, b = rgb
     lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
     return lum
+
+
+def adjust_lightness(hex_color: str, lightness: float) -> str:
+    """Return ``hex_color`` with its HLS lightness replaced by ``lightness`` (0-1),
+    hue and saturation unchanged -- e.g. a lighter/darker variant of the same color for
+    encoding a secondary variable (confidence, support level, ...) via shade while hue
+    still encodes a categorical variable (gene, group, ...).
+
+    Uses ``colorsys`` (stdlib), not ``matplotlib.colors.rgb_to_hsv``/``hsv_to_rgb``:
+    HSV's "Value" and HLS's "Lightness" are different channels that respond
+    differently to the same RGB triple, so they are not interchangeable here.
+
+    Args:
+        hex_color: e.g. ``"#66c2a5"``.
+        lightness: Target HLS lightness, 0 (black) to 1 (white).
+
+    Returns:
+        Hex color string, same format as the input.
+
+    Example:
+        >>> adjust_lightness("#66c2a5", 0.85)  # a washed-out variant of the same teal
+        '#c8e9df'
+    """
+    r, g, b = mpl.colors.to_rgb(hex_color)
+    h, _l, s = colorsys.rgb_to_hls(r, g, b)
+    r2, g2, b2 = colorsys.hls_to_rgb(h, lightness, s)
+    return mpl.colors.to_hex((r2, g2, b2))
+
+
+def stable_categorical_color(key: str, palette: list[str]) -> str:
+    """Deterministically map ``key`` to one color in ``palette``, stable across
+    processes and runs -- unlike Python's built-in ``hash()``, which is randomized
+    per-process for strings (``PYTHONHASHSEED``) and would give a different bucket
+    every run. Collisions across many keys against a small palette are expected and
+    fine for "visually distinguish most categories at a glance" use cases; use a
+    real categorical encoding (e.g. a legend) instead when every key must be unique.
+
+    Args:
+        key: The category to color, e.g. a gene name.
+        palette: Candidate colors to choose from, e.g. ``SET2_HEX``.
+
+    Returns:
+        One entry of ``palette``.
+
+    Example:
+        >>> stable_categorical_color("AGO2", ["#66c2a5", "#fc8d62", "#8da0cb"])
+        '#66c2a5'
+    """
+    return palette[zlib.crc32(key.encode()) % len(palette)]
