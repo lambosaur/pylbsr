@@ -123,6 +123,7 @@ ignore = [
   "E211",  # whitespace before '('
   "E203",  # Whitespace before ':'
   "F722",  # Forward annotation (deactivated for jaxtyping)
+  "F401", # Ignore unused imports (for now)
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
@@ -174,6 +175,7 @@ platforms = ["linux-64"]
 bedtools = "*"
 python = ">=3.10,<3.13"
 zlib = "*"
+py2bit = ">=1.0.1,<2"
 
 [tool.pixi.pypi-dependencies]
 pylbsr = { path = ".", editable = true }
