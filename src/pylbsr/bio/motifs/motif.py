@@ -201,7 +201,7 @@ class Motif:
             DataFrame with RangeIndex named "pos" and numeric values.
         """
         df = self.matrix.copy()
-        df.index = pd.RangeIndex(len(df), name="pos")
+        df.index = pd.RangeIndex(stop=len(df), name="pos")
         return df
 
 
