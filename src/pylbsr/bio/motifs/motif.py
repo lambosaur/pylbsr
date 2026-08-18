@@ -574,7 +574,7 @@ def _write_matrix_transfac(
         )
 
     header = f"P0{matrix_key_value_separator}" + matrix_value_content_separator.join(
-        matrix.columns.values
+        str(column) for column in matrix.columns
     )
     handle.write(header + "\n")
 
