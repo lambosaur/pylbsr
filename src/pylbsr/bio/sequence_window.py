@@ -71,6 +71,7 @@ def decompose_query_window(
     window_size: int,
     restraint_intervals: pbt.BedTool | None = None,
     restraint_mode: Literal["keep", "exclude"] = "keep",
+    center_bias: Literal["left", "right"] = "left",
 ) -> DataFrame[WindowSegmentsModel]:
     """Decompose a query BED interval into an ordered table of window segments.
 
@@ -88,6 +89,11 @@ def decompose_query_window(
         restraint_intervals: Optional BedTool of constraint intervals.
         restraint_mode: "keep" → only restraint-covered positions are valid;
             "exclude" → restraint-covered positions are masked.
+        center_bias: For even `window_size`, which side of the center absorbs the
+            extra base — "left" (default, matches prior hardcoded behavior) keeps
+            the center on the right half of the window; "right" shifts the whole
+            window one base to the right, putting the center on the left half.
+            No effect for odd `window_size` (the window is symmetric already).
 
     Returns:
         DataFrame with columns window_start, window_end, genomic_chrom,
@@ -105,7 +111,10 @@ def decompose_query_window(
         raise ValueError(f"Require 0 <= start < end, got start={start}, end={end}.")
 
     center = (start + end) // 2
-    win_start = center - window_size // 2
+    if center_bias == "left":
+        win_start = center - window_size // 2
+    else:
+        win_start = center - (window_size - 1) // 2
     win_end = win_start + window_size
 
     chrom_len = chrom_sizes[chrom]
@@ -211,6 +220,7 @@ def fetch_windowed_sequence(
     fill_char: str,
     restraint_intervals: pbt.BedTool | None = None,
     restraint_mode: Literal["keep", "exclude"] = "keep",
+    center_bias: Literal["left", "right"] = "left",
 ) -> str:
     """Fetch a fill-character-padded sequence of exact length W for a BED interval.
 
@@ -234,6 +244,7 @@ def fetch_windowed_sequence(
         fill_char: Single character used for padding and masking.
         restraint_intervals: Optional BedTool of constraint intervals.
         restraint_mode: "keep" or "exclude" (see decompose_query_window).
+        center_bias: See `decompose_query_window`. Default "left" preserves prior behavior.
 
     Returns:
         Nucleotide string of length exactly window_size.
@@ -250,6 +261,7 @@ def fetch_windowed_sequence(
         window_size=window_size,
         restraint_intervals=restraint_intervals,
         restraint_mode=restraint_mode,
+        center_bias=center_bias,
     )
 
     parts: list[str] = []

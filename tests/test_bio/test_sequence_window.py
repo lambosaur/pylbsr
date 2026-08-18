@@ -145,6 +145,42 @@ class TestDecomposeQueryWindow:
         total = (df["window_end"] - df["window_start"]).sum()
         assert total == 100
 
+    def test_even_window_size_default_bias_characterization(self) -> None:
+        """Characterization test (pin current behavior before adding `center_bias`).
+
+        For even window_size, current code always biases the extra half towards
+        genomic-left of the query center: center=(10+20)//2=15, win_start=15-4//2=13.
+        This must keep passing unchanged once `center_bias` (default "left") is added.
+        """
+        df = decompose_query_window("chr1", 10, 12, "+", CHROM_SIZES, window_size=4)
+        _assert_covers_window(df, 4)
+        assert len(df) == 1
+        assert df.iloc[0]["genomic_start"] == 9
+        assert df.iloc[0]["genomic_end"] == 13
+
+    def test_center_bias_right_shifts_even_window(self) -> None:
+        """center_bias='right' shifts an even-size window one base right of 'left'."""
+        df_left = decompose_query_window(
+            "chr1", 10, 12, "+", CHROM_SIZES, window_size=4, center_bias="left"
+        )
+        df_right = decompose_query_window(
+            "chr1", 10, 12, "+", CHROM_SIZES, window_size=4, center_bias="right"
+        )
+        assert df_left.iloc[0]["genomic_start"] == 9
+        assert df_right.iloc[0]["genomic_start"] == 10
+        assert df_right.iloc[0]["genomic_end"] == 14
+
+    def test_center_bias_no_effect_for_odd_window_size(self) -> None:
+        """center_bias is a no-op when window_size is odd (already symmetric)."""
+        df_left = decompose_query_window(
+            "chr1", 10, 12, "+", CHROM_SIZES, window_size=5, center_bias="left"
+        )
+        df_right = decompose_query_window(
+            "chr1", 10, 12, "+", CHROM_SIZES, window_size=5, center_bias="right"
+        )
+        assert df_left.iloc[0]["genomic_start"] == df_right.iloc[0]["genomic_start"]
+        assert df_left.iloc[0]["genomic_end"] == df_right.iloc[0]["genomic_end"]
+
 
 # ---------------------------------------------------------------------------
 # fetch_windowed_sequence
@@ -230,3 +266,17 @@ class TestFetchWindowedSequence:
             "chr1", 900, 910, "+", {"chr1": 100}, window_size=100, fasta=fasta, fill_char="N"
         )
         assert result == "N" * 100
+
+    def test_center_bias_right_shifts_result(self) -> None:
+        fasta = self._mock_fasta("ACGTACGTAC" * 100)
+        result_left = fetch_windowed_sequence(
+            "chr1", 10, 12, "+", CHROM_SIZES, window_size=4, fasta=fasta, fill_char="N",
+            center_bias="left",
+        )
+        result_right = fetch_windowed_sequence(
+            "chr1", 10, 12, "+", CHROM_SIZES, window_size=4, fasta=fasta, fill_char="N",
+            center_bias="right",
+        )
+        seq = "ACGTACGTAC" * 100
+        assert result_left == seq[9:13]
+        assert result_right == seq[10:14]
