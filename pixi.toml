@@ -1,0 +1,25 @@
+[workspace]
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64"]
+
+[dependencies]
+bedtools = "*"
+python = ">=3.10,<3.13"
+zlib = "*"
+
+[pypi-dependencies]
+pylbsr = { path = ".", editable = true }
+
+[feature.dev.pypi-dependencies]
+pylbsr = { path = ".", editable = true, extras = ["dev"] }
+
+[feature.ml.pypi-dependencies]
+pylbsr = { path = ".", editable = true, extras = ["ml"] }
+
+[environments]
+default = { features = ["dev"], solve-group = "default" }
+bare = { solve-group = "default" }
+ml = { features = ["ml"], solve-group = "default" }
+
+[tasks]
+test = "pytest"

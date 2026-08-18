@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pip-install-and-test:
+    # Verifies `pip install .` actually works on a clean system — this is the check that
+    # would have caught a dependency silently missing from [project.dependencies].
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system prerequisites
+        # build-essential + zlib1g-dev: needed to compile pybedtools' C extension.
+        # bedtools: the CLI binary pybedtools shells out to at runtime.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
+
+      - name: pip install
+        run: pip install .[dev]
+
+      - name: Run tests
+        run: pytest
+
+  lint-and-typecheck:
+    # Kept independent of the pip-install-and-test job's build toolchain: ruff/mypy don't
+    # need pybedtools compiled, just installed directly, so this stays fast.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install lint/type-check tools
+        run: pip install "ruff>=0.11,<1.0" "mypy>=1.11,<2.0"
+
+      - name: ruff check
+        run: ruff check .
+
+      - name: ruff format --check
+        run: ruff format --check .
+
+      - name: mypy
+        run: mypy src

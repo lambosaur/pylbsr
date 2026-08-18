@@ -31,6 +31,7 @@ dependencies = [
     "numpy >=1.26,<2.0",
     "pandas>=2.0",
     "pandera>=0.26,<1.0",
+    "py2bit >=1.0.1,<2",
     "pybedtools >=0.12.0,<0.13",
     "pybigwig >=0.3.22,<0.4",
     "pyfaidx >=0.8,<1.0",
@@ -123,7 +124,6 @@ ignore = [
   "E211",  # whitespace before '('
   "E203",  # Whitespace before ':'
   "F722",  # Forward annotation (deactivated for jaxtyping)
-  "F401", # Ignore unused imports (for now)
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
@@ -166,26 +166,4 @@ strict_equality = true
 
 module = ["tests.*"]
 disallow_untyped_defs = false
-
-[tool.pixi.workspace]
-channels = ["conda-forge", "bioconda"]
-platforms = ["linux-64"]
-
-[tool.pixi.dependencies]
-bedtools = "*"
-python = ">=3.10,<3.13"
-zlib = "*"
-py2bit = ">=1.0.1,<2"
-
-[tool.pixi.pypi-dependencies]
-pylbsr = { path = ".", editable = true }
-
-[tool.pixi.environments]
-default = { solve-group = "default" }
-dev = { features = ["dev"], solve-group = "default" }
-ml = { features = ["ml"], solve-group = "default" }
-
-[tool.pixi.tasks]
-
-test = "pytest"
 
