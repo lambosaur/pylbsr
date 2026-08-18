@@ -1,0 +1,34 @@
+name: Update pixi.lock
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"   # monthly, 06:00 UTC on the 1st
+  workflow_dispatch:        # allows manual triggering any time
+
+jobs:
+  update-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.9.1
+
+      - name: Re-resolve dependencies
+        run: pixi update
+
+      - name: Run tests against the updated lock
+        run: pixi run test
+
+      - name: Open a PR with the updated lock
+        # Only reached if the tests above passed. Deliberately opens a PR rather than
+        # committing straight to main, so there's always a diff to look at before an
+        # updated lock becomes what everyone (including CI) builds against.
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "Update pixi.lock"
+          title: "chore: update pixi.lock"
+          body: |
+            Automated monthly re-resolution of `pixi.lock`. Tests passed against the
+            updated dependency versions before this PR was opened.
+          branch: update-pixi-lock
+          add-paths: pixi.lock

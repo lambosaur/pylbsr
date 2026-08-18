@@ -53,6 +53,7 @@ dev = [
     # Tests
     "pytest >=8.4,<9",
     "pytest-cov >=6.0,<7.0",
+    "tox >=4.19",
     # Docs
     "mkdocstrings-python >=1.16,<2.0",
     "mkdocs >=1.6,<2.0",
@@ -84,6 +85,17 @@ testpaths = ["tests"]
 [tool.coverage.report]
 
 show_missing = true
+
+[tool.tox]
+
+requires = ["tox>=4.19"]
+env_list = ["py310", "py311", "py312", "py313", "py314"]
+
+[tool.tox.env_run_base]
+
+description = "Run tests under {base_python}"
+extras = ["dev"]
+commands = [["pytest"]]
 
 [tool.ruff]
 

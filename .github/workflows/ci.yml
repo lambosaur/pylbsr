@@ -30,6 +30,36 @@ jobs:
       - name: Run tests
         run: pytest
 
+  python-version-matrix:
+    # Verifies the project actually works across the full range of Python versions claimed
+    # supported by requires-python in pyproject.toml — separate from pip-install-and-test
+    # (which only checks one Python version) and deliberately not using pixi.lock, since a
+    # lock pins to one Python version by nature and can't answer this question.
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
+
+      - name: Install tox
+        run: pip install tox
+
+      - name: Run tests via tox
+        # `py` is tox's "current interpreter" magic factor: each matrix leg already has
+        # exactly the Python version it needs from actions/setup-python, so this just runs
+        # the matching tox environment directly.
+        run: tox -e py
+
   lint-and-typecheck:
     # Kept independent of the pip-install-and-test job's build toolchain: ruff/mypy don't
     # need pybedtools compiled, just installed directly, so this stays fast.
