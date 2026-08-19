@@ -1563,7 +1563,7 @@ packages:
 - pypi: ./
   name: pylbsr
   version: 0.0.1
-  sha256: 116216a9796bbfc1d9e9170cf831a7608a1d46b8c79b5703dbc2e4de99c33f24
+  sha256: 181689708ccb0c682b883283692e3c9df04329986509e8fb85ad46165aa4adcc
   requires_dist:
   - biopython>=1.83
   - dotmap>=1.0.0,<2
