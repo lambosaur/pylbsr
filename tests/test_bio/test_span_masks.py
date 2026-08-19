@@ -121,7 +121,9 @@ class TestScatterSpanMasks:
 class TestRelativeCoordinatesToScatteredSpanMasks:
     def test_basic(self) -> None:
         df = pd.DataFrame({"name": ["q1", "q1", "q2"], "start": [0, 5, 2], "end": [3, 8, 4]})
-        result = relative_coordinates_to_scattered_span_masks(df, ["q1", "q2"], length=10, allow_empty=True)
+        result = relative_coordinates_to_scattered_span_masks(
+            df, ["q1", "q2"], length=10, allow_empty=True
+        )
         assert result.shape == (2, 10)
         assert result[0, 0] == 1  # q1 covers [0,3)
         assert result[0, 6] == 1  # q1 covers [5,8)
@@ -129,7 +131,11 @@ class TestRelativeCoordinatesToScatteredSpanMasks:
         assert result[1, 0] == 0  # q2 doesn't cover [0,2)
 
     def test_empty_disallowed_raises(self) -> None:
-        df = pd.DataFrame({"name": pd.Series([], dtype=str), "start": pd.Series([], dtype="int64"), "end": pd.Series([], dtype="int64")})
+        df = pd.DataFrame({
+            "name": pd.Series([], dtype=str),
+            "start": pd.Series([], dtype="int64"),
+            "end": pd.Series([], dtype="int64"),
+        })
         with pytest.raises(ValueError, match="allow_empty=False"):
             relative_coordinates_to_scattered_span_masks(df, ["q1"], length=5, allow_empty=False)
 

@@ -3,6 +3,7 @@
 from io import StringIO
 
 import pytest
+from pydantic import ValidationError
 
 from pylbsr.bio.wig import (
     FixedStepBlock,
@@ -95,7 +96,7 @@ class TestFixedStepBlock:
 
     def test_frozen(self):
         block = FixedStepBlock(chrom="chr1", start=1, values=(1.0,))
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             block.chrom = "chr2"
 
 

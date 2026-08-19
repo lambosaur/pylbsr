@@ -136,7 +136,7 @@ def test_parse_transfac_motif_lines(correct_motif_example):
 def test_matrix_values_are_numeric(correct_motif_example):
     motif = _make_motif(correct_motif_example)
     for dtype in motif.matrix.dtypes:
-        assert dtype != object, f"Column dtype should be numeric, got {dtype}"
+        assert dtype != object, f"Column dtype should be numeric, got {dtype}"  # noqa: E721 -- numpy dtype `!=` is a value comparison, not identity; `is not` would always be True here
 
 
 def test_force_numeric_raises():
@@ -315,10 +315,10 @@ def test_merge_rename_motif_collections_prefix():
 def test_merge_rename_motif_collections_ac_renamed():
     """AC field must be prefixed (this tests the bug-fix path)."""
     motif = _make_motif_with_ac()
-    original_ac = [m.value for m in motif.metadata["header"] if m.key == "AC"][0]
+    original_ac = next(m.value for m in motif.metadata["header"] if m.key == "AC")
 
     result = merge_rename_motif_collections({"JASPAR": [motif]})
-    new_ac = [m.value for m in result[0].metadata["header"] if m.key == "AC"][0]
+    new_ac = next(m.value for m in result[0].metadata["header"] if m.key == "AC")
     assert new_ac == f"JASPAR.{original_ac}"
 
 
