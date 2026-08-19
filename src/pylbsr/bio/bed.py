@@ -1,3 +1,5 @@
+"""BED interval dataclasses, Pandera schemas, and parsing helpers."""
+
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from typing import Literal
@@ -31,8 +33,8 @@ class GenomicInterval:
     score: int | float | str
     strand: Literal["+", "-"]
 
-    def __post_init__(self):
-        # Enforce [0, end) interval.
+    def __post_init__(self) -> None:
+        """Enforce [0, end) interval."""
         if self.start < 0:
             raise ValueError(f"Start position {self.start} must be non-negative.")
         if self.start >= self.end:
@@ -55,23 +57,28 @@ class Bed6IntervalsModel(pa.DataFrameModel):
     def check_start_greater_than_zero(
         cls, series: pa.typing.Series[pa.typing.Int64]
     ) -> pa.typing.Series[pa.typing.Int64]:
+        """Keep only rows where `start` is strictly positive."""
         return series[series > 0]
 
     @pa.check("end")
     def check_end_greater_than_zero(
         cls, series: pa.typing.Series[pa.typing.Int64]
     ) -> pa.typing.Series[pa.typing.Int64]:
+        """Keep only rows where `end` is strictly positive."""
         return series[series > 0]
 
     @pa.check("end")
     def check_end_greater_than_start(
         cls, series: pa.typing.Series[pa.typing.Int64]
     ) -> pa.typing.Series[pa.typing.Int64]:
+        """Keep only rows where `end` is strictly greater than `start`."""
         return series[series > series["start"]]
 
 
 @dataclass
 class SequenceInterval:
+    """A simple (chrom, start, end, strand) interval, as parsed from a "chrom:start-end:strand" id."""
+
     chrom: str
     start: int
     end: int
@@ -89,9 +96,7 @@ def identifiers_to_bed6_dataframe(
     identifiers: Sequence[str],
 ) -> DataFrame[Bed6IntervalsModel]:
     """Parse a list of "chrom:start-end:strand" identifiers to a BED6 dataframe."""
-    df = pd.DataFrame(
-        (asdict(parse_name_to_sequence_interval(v)) for v in identifiers)
-    )
+    df = pd.DataFrame(asdict(parse_name_to_sequence_interval(v)) for v in identifiers)
     df["name"] = identifiers
     df = df.reset_index().rename(columns={"index": "score"})
 
