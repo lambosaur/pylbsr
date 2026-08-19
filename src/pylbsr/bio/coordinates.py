@@ -1,3 +1,5 @@
+"""Coordinate systems and slicing configs for extracting windows around a genomic anchor."""
+
 import warnings
 from enum import Enum
 

@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+"""Reusable TRANSFAC motif fixtures for tests."""
 
 from abc import ABC, abstractmethod
 from collections import namedtuple

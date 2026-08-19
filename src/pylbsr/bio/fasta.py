@@ -1,3 +1,5 @@
+"""Chunked reading of FASTA files."""
+
 import os
 from collections.abc import Callable, Iterator
 

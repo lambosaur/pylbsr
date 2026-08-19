@@ -1,3 +1,5 @@
+"""Parsing, writing, and manipulating TRANSFAC-format motifs."""
+
 from .motif import (
     ALPHABET_DNA,
     ALPHABET_RNA,

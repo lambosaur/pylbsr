@@ -1,3 +1,5 @@
+"""NaN-aware pairwise metrics."""
+
 from collections.abc import Callable
 from dataclasses import dataclass
 

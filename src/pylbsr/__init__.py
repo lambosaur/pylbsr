@@ -1,3 +1,4 @@
+"""Lambosaur's python toolbox."""
 
 try:
     from ._version import __version__
