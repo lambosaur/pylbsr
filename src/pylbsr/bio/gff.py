@@ -12,11 +12,12 @@ os.environ.setdefault("PANDERA_BACKEND", "pandas")
 # sys.modules["pyspark"] = None
 import warnings
 from dataclasses import dataclass
+from typing import cast
 
 import numpy as np
 import pandas as pd
 import pybedtools as pbt
-from pandera.pandas import DataFrameModel, Field, check
+from pandera.pandas import DataFrameModel, Field, check, dataframe_check
 from pandera.typing import DataFrame, Series
 from typing_extensions import Self
 
@@ -62,7 +63,7 @@ class GFFSchema(DataFrameModel):
         return pd.isna(s) or s in {"0", "1", "2", "."}
 
     # --- dataframe-level checks -------------------------------------------
-    @check
+    @dataframe_check()
     def _end_ge_start(cls, df: pd.DataFrame) -> pd.Series:
         return df["end"] >= df["start"]
 
@@ -114,7 +115,7 @@ def read_gff(filepath: os.PathLike, validate: bool = False) -> DataFrame[GFFSche
         df["end"] = df["end"].astype(int)
         df["score"] = pd.to_numeric(df["score"], errors="coerce")
 
-    return df
+    return cast(DataFrame[GFFSchema], df)
 
 
 def split_attributes(col: pd.Series, kv_sep: str = "=", field_sep: str = ";") -> pd.DataFrame:
