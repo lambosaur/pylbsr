@@ -211,6 +211,14 @@ def test_write_matrix_content(correct_motif_writable_example):
     assert handle.readlines() == correct_motif_writable_example.lines_matrix()
 
 
+def test_write_matrix_stringifies_column_labels():
+    handle = StringIO()
+    matrix = pd.DataFrame([[1, 2, 3, 4]], index=["01"], columns=[0, 1, 2, 3])
+    _write_matrix_transfac(handle=handle, matrix=matrix)
+    handle.seek(0)
+    assert handle.readlines() == ["P0  0 1 2 3\n", "01  1 2 3 4\n"]
+
+
 def test_write_motif_transfac_roundtrip():
     """Write then re-read a motif; matrix values must be preserved.
 
