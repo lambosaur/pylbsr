@@ -1,7 +1,9 @@
-# /usr/bin/env python3
-# Documentation on motif formats:
-# - TRANSFAC (MEME): https://meme-suite.org/meme/doc/transfac-format.html
-# - MEME format: https://meme-suite.org/meme/doc/meme-format.html
+"""TRANSFAC motif parsing/writing and the Motif dataclass.
+
+Documentation on motif formats:
+- TRANSFAC (MEME): https://meme-suite.org/meme/doc/transfac-format.html
+- MEME format: https://meme-suite.org/meme/doc/meme-format.html
+"""
 
 from __future__ import annotations
 
@@ -81,13 +83,13 @@ class Motif:
     matrix_type: str | None = None
 
     def __post_init__(self) -> None:
+        """Validate the parsed matrix and metadata."""
         if self.matrix.empty:
             raise MotifError("Dataframe matrix is empty.")
 
-        if list(self.matrix.index)[0] != "01":
-            raise MotifError(
-                f"Motif PWM index should start at '01'; got {list(self.matrix.index)[0]!r}"
-            )
+        first_index = next(iter(self.matrix.index))
+        if first_index != "01":
+            raise MotifError(f"Motif PWM index should start at '01'; got {first_index!r}")
 
         if "header" not in self.metadata:
             raise MotifError("Expected metadata list 'header' not found.")
@@ -389,9 +391,8 @@ def _group_handle_lines_per_motif(lines: Iterator[str]) -> list[list[str]]:
             result.append(current)
             current = []
 
-    if current:
-        if not (len(current) == 1 and current[0] == "\n"):
-            raise MotifError(f"Last motif is not terminated by '//' line: {current}")
+    if current and not (len(current) == 1 and current[0] == "\n"):
+        raise MotifError(f"Last motif is not terminated by '//' line: {current}")
 
     return result
 
@@ -418,9 +419,12 @@ def parse_transfac_motif_lines(
 
     Args:
         lines: Lines for a single motif (as read from a TRANSFAC file).
-        key_value_separator: Separator between KEY and VALUE in metadata lines. Defaults to "  ".
-        matrix_key_value_separator: Separator between KEY and VALUE in matrix lines. Defaults to "  ".
-        matrix_value_content_separator: Separator between values within a matrix line. Defaults to " ".
+        key_value_separator: Separator between KEY and VALUE in metadata lines.
+            Defaults to "  ".
+        matrix_key_value_separator: Separator between KEY and VALUE in matrix lines.
+            Defaults to "  ".
+        matrix_value_content_separator: Separator between values within a matrix line.
+            Defaults to " ".
         rename_columns: Optional dict to rename columns parsed from the P0 line. Defaults to None.
         force_numeric: If True, raise MotifError when matrix values cannot be cast to numeric.
             If False (default), warn and keep values as strings. Defaults to False.
@@ -774,7 +778,9 @@ def relabel_motif_collection(
             new_id = f"{original_id}_{id_counts[original_id]}"
             motif.id = new_id
             motif.set_metadata(key="ID", subset="header", value=new_id)
-            motif.add_metadata(subset="footer", key="CC", value=f"Original duplicated ID: {original_id}")
+            motif.add_metadata(
+                subset="footer", key="CC", value=f"Original duplicated ID: {original_id}"
+            )
 
         relabeled.append(motif)
 
