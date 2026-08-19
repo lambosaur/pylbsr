@@ -15,10 +15,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-import pandera as pa
-import pandera.pandas as pa
 import pybedtools as pbt
-from pandera import DataFrameModel, Field, check
 from pandera.pandas import DataFrameModel, Field, check
 from pandera.typing import DataFrame, Series
 from typing_extensions import Self

@@ -1,7 +1,5 @@
 import logging
 
-import numpy as np
-
 try:
     import torch
 except ImportError as e:

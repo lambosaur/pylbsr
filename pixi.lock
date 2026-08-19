@@ -1563,11 +1563,11 @@ packages:
 - pypi: ./
   name: pylbsr
   version: 0.0.1
-  sha256: ba5d6e19f185405457bcdb8c50e57d867f2c1b92cb26c2b38ab432060d0b5c82
+  sha256: 116216a9796bbfc1d9e9170cf831a7608a1d46b8c79b5703dbc2e4de99c33f24
   requires_dist:
   - biopython>=1.83
   - dotmap>=1.0.0,<2
-  - liftover>=1.3.3,<1.4.0
+  - liftover>=1.3.3,<2.0.0
   - matplotlib>=3.5
   - numpy>=1.26,<2.0
   - pandas>=2.0

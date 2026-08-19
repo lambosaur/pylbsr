@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Literal
 
 import pybedtools as pbt

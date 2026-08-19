@@ -1,1 +1,1 @@
-from . import motifs
+from . import motifs as motifs

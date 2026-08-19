@@ -7,7 +7,6 @@ import pandas as pd
 import pytest
 
 from pylbsr.bio.motifs import (
-    ALPHABET_DNA,
     Motif,
     MotifError,
     merge_rename_motif_collections,
