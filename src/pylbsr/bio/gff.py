@@ -23,6 +23,8 @@ from typing_extensions import Self
 
 @dataclass
 class GenomicInterval:
+    """A single genomic interval (chrom, start, end, strand)."""
+
     chrom: str
     start: int
     end: int
@@ -157,7 +159,7 @@ def write_gff(
 class ExtendedGFF:
     """Class representing a GFF file with split attributes."""
 
-    def __init__(self, gff: pd.DataFrame, attributes: pd.DataFrame):
+    def __init__(self, gff: pd.DataFrame, attributes: pd.DataFrame) -> None:
         """Initialize an ExtendedGFF instance."""
         self._gff = gff
         self._attributes = attributes
