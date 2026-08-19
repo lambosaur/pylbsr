@@ -1,7 +1,6 @@
 """Library for mapping genomic coordinates from a GFF to relative coordinates through a chain file."""
 
 from collections.abc import Callable, Iterable
-from numbers import Number
 from typing import Literal, TextIO
 
 import pandas as pd
@@ -24,7 +23,7 @@ class ChainRecord:
         q_start: int,
         q_end: int,
         chain_id: int,
-        score: Number,
+        score: float,
     ) -> None:
         """Initialize a ChainRecord with the given parameters."""
         # Header fields as defined by UCSC chain format
@@ -113,7 +112,6 @@ class ChainRecord:
         return header + "\n" + "\n".join(block_lines) + "\n"
 
 
-
 class MappingTable:
     """A class representing a mapping table between two sets of interval coordinates."""
 
@@ -121,7 +119,7 @@ class MappingTable:
         """Initialize a MappingTable with a DataFrame containing the mapping information."""
         self.df = df.copy()  # one entity only
 
-    def to_chain(self, target: str, query: str, chain_id: int, score: Number) -> ChainRecord:
+    def to_chain(self, target: str, query: str, chain_id: int, score: float) -> ChainRecord:
         """Convert the mapping table to a UCSC chain format with the specified target and query.
 
         Per UCSC chain format specification:
@@ -227,7 +225,6 @@ class MappingTable:
         return chain
 
 
-
 def _per_entity_processing_to_nool_bed6(
     gff: pd.DataFrame,
     entity_id_column: str,
@@ -254,7 +251,6 @@ def _per_entity_processing_to_nool_bed6(
     assert gff["type"].isin(subset_type_).any(), (
         f"GFF must have annotations of type(s) {subset_type_}!"
     )
-
 
     gff = gff.loc[lambda df: df["type"].isin(subset_type_)]
     if gff.shape[0] == 0:
@@ -382,7 +378,6 @@ def _assign_entity_query_coords(bed: pd.DataFrame) -> pd.DataFrame:
     return mapping_table
 
 
-
 # Define a function signature that takes a mapping table and returns a float.
 ScoreFunction = Callable[[pd.DataFrame], float]
 
@@ -439,10 +434,7 @@ def gff_to_chains(
         mapping_table = _assign_entity_query_coords(bed6)
         score = scoring_fun(mapping_table) if scoring_fun is not None else 0
         chain = MappingTable(mapping_table).to_chain(
-            target=_target,
-            query=_query,
-            chain_id=idx_entity,
-            score=score
+            target=_target, query=_query, chain_id=idx_entity, score=score
         )
         yield chain
 

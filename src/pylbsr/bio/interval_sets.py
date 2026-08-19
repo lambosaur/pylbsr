@@ -87,14 +87,16 @@ def build_membership(
             df.columns = pd.Index(["chrom", "start", "end", "strand"])
             df.insert(3, "name", range(len(df)))
             # BED6 layout required for -s: chrom start end name score strand
-            df_bed = pd.DataFrame({
-                "chrom": df["chrom"],
-                "start": df["start"],
-                "end": df["end"],
-                "name": df["name"],
-                "score": 0,
-                "strand": df["strand"],
-            })
+            df_bed = pd.DataFrame(
+                {
+                    "chrom": df["chrom"],
+                    "start": df["start"],
+                    "end": df["end"],
+                    "name": df["name"],
+                    "score": 0,
+                    "strand": df["strand"],
+                }
+            )
             out_names = ["chrom", "start", "end", "name", "score", "strand"]
         else:
             # BED3 → BED4: chrom start end name
@@ -113,8 +115,7 @@ def build_membership(
             if subject_key == query_key:
                 continue
             overlapping: set[Any] = set(
-                bt_named.intersect(bt_subject, **intersect_kw)
-                .to_dataframe(names=out_names)["name"]
+                bt_named.intersect(bt_subject, **intersect_kw).to_dataframe(names=out_names)["name"]
             )
             df_result[subject_key] = df_result["name"].isin(overlapping)
 
@@ -164,9 +165,7 @@ def pairwise_intersect_counts(
                 inter[i, j] = counts[name_i]
             else:
                 inter[i, j] = (
-                    named_bedtools[name_i]
-                    .intersect(named_bedtools[name_j], **intersect_kw)
-                    .count()
+                    named_bedtools[name_i].intersect(named_bedtools[name_j], **intersect_kw).count()
                 )
     return counts, inter
 
@@ -270,9 +269,7 @@ class BedSetComparison:
             always ``True``.
         """
         if self._membership is None:
-            self._membership = build_membership(
-                self.named_bedtools, self.frac, self.stranded
-            )
+            self._membership = build_membership(self.named_bedtools, self.frac, self.stranded)
         return self._membership
 
     @property
@@ -313,7 +310,7 @@ class BedSetComparison:
         """
         counts, inter = self._pairwise
         row_totals = np.array([counts[k] for k in self.set_names], dtype=float)
-        mat = inter.astype(float) / row_totals[:, np.newaxis]
+        mat = np.asarray(inter.astype(float) / row_totals[:, np.newaxis])
         np.fill_diagonal(mat, 1.0)
         return mat
 

@@ -108,6 +108,8 @@ def assert_notebook_working_dir(expected_local_file: os.PathLike) -> Path:
 
             return expected_local_filepath.parent
 
+        raise ValueError("Unexpected error: expected_local_filepath is not relative to cwd")
+
     else:
         if "__vsc_ipynb_file__" in globals():
             os.chdir(Path(globals()["__vsc_ipynb_file__"]).parent)
@@ -126,7 +128,7 @@ def assert_notebook_working_dir(expected_local_file: os.PathLike) -> Path:
 
         else:
             # Search from current directory
-            found_file = find_file(expected_local_file, cwd)
+            found_file = find_file(str(expected_local_file), str(cwd))
 
             if found_file is None:
                 raise ValueError(
@@ -135,11 +137,11 @@ def assert_notebook_working_dir(expected_local_file: os.PathLike) -> Path:
                     "Tried locating the file in subdirectories but not found."
                 )
 
-            found_file = Path(found_file)
-            if found_file.resolve().is_relative_to(cwd):
-                os.chdir(found_file.parent)
-                print(f"Changed CWD to {found_file.parent}")
-                return found_file.parent
+            found_file_path = Path(found_file)
+            if found_file_path.resolve().is_relative_to(cwd):
+                os.chdir(found_file_path.parent)
+                print(f"Changed CWD to {found_file_path.parent}")
+                return found_file_path.parent
 
             else:
                 raise ValueError("Unexpected error: found_file is not relative to cwd")
@@ -178,7 +180,6 @@ def enable_cell_timing_print() -> None:
 
 
 _registered_metadata = False
-
 
 
 def enable_cell_timing_metadata(show: bool = False) -> None:

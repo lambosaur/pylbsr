@@ -97,11 +97,13 @@ def create_randomized_tmp_dir(parent_dir: os.PathLike | None = None) -> str:  # 
         if params_tmp_dir is not None:
             parent_tmp_dir = Path(params_tmp_dir)
 
-    if os.getenv("TMP_DIR") is not None:
-        parent_tmp_dir = Path(os.getenv("TMP_DIR"))
+    tmp_dir_env = os.getenv("TMP_DIR")
+    if tmp_dir_env is not None:
+        parent_tmp_dir = Path(tmp_dir_env)
 
-    if os.getenv("TMP") is not None:
-        parent_tmp_dir = Path(os.getenv("TMP"))
+    tmp_env = os.getenv("TMP")
+    if tmp_env is not None:
+        parent_tmp_dir = Path(tmp_env)
 
     if parent_tmp_dir is None:
         raise ValueError("No temporary directory specified or found.")
@@ -234,7 +236,7 @@ def glob_wildcards(unformatted_filepath: str) -> dict[str, list[str]]:
     fields = [f for _, f, _, _ in parts if f]
     glob_pattern = unformatted_filepath.format(**{f: "*" for f in fields})
 
-    matches = {f: [] for f in fields}
+    matches: dict[str, list[str]] = {f: [] for f in fields}
     for filepath in glob.glob(glob_pattern):
         vals = extract_fields_from_formatted_string(unformatted_filepath, Path(filepath).as_posix())
         for f in fields:
@@ -255,12 +257,10 @@ def get_open_func(filepath: os.PathLike) -> Callable:
         return open
 
 
-
-
 def chunked(lst: Sequence, n: int) -> Iterable:
-        """Yield successive n-sized chunks from lst."""
-        for i in range(0, len(lst), n):
-            yield lst[i : i + n]
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
 
 
 @contextmanager

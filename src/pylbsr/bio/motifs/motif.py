@@ -15,7 +15,7 @@ from collections import defaultdict
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import TextIO
+from typing import TextIO, cast
 
 import Bio.motifs
 import pandas as pd
@@ -76,9 +76,7 @@ class Motif:
 
     id: str
     matrix: pd.DataFrame
-    metadata: dict[str, list[_ParsedMetadataLine]] = field(
-        default_factory=lambda: defaultdict(list)
-    )
+    metadata: dict[str, list[_ParsedMetadataLine]] = field(default_factory=lambda: defaultdict(list))
     consensus: str | None = None
     matrix_type: str | None = None
 
@@ -574,9 +572,7 @@ def _write_matrix_transfac(
         ValueError: if consensus length does not match matrix row count.
     """
     if consensus and len(consensus) != matrix.shape[0]:
-        raise ValueError(
-            f"Consensus length {len(consensus)} != matrix row count {matrix.shape[0]}."
-        )
+        raise ValueError(f"Consensus length {len(consensus)} != matrix row count {matrix.shape[0]}.")
 
     header = f"P0{matrix_key_value_separator}" + matrix_value_content_separator.join(
         str(column) for column in matrix.columns
@@ -677,7 +673,7 @@ def motif_to_biopython_motif(motif: Motif) -> Bio.motifs.Motif:
     handle = StringIO()
     write_motif_transfac(handle=handle, motif=motif, minimal=True)
     handle.seek(0)
-    return Bio.motifs.read(handle, "transfac")
+    return cast(Bio.motifs.Motif, Bio.motifs.read(handle, "transfac"))
 
 
 # ---------------------------------------------------------------------------

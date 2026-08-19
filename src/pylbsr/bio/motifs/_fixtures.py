@@ -1,10 +1,15 @@
 """Reusable TRANSFAC motif fixtures for tests."""
 
 from abc import ABC, abstractmethod
-from collections import namedtuple
 from typing import NamedTuple
 
 import pandas as pd
+
+
+class _Expected(NamedTuple):
+    key: str
+    values: tuple[str, ...]
+    consensus: str | None
 
 
 class TransfacMotifExample(ABC):
@@ -63,26 +68,25 @@ class TransfacMotifExample(ABC):
         return lines_matrix[: N + 1]  # +1 for the header
 
     @classmethod
-    def get_lines_matrix_for_test(cls, N: int = 3) -> list[tuple[str, NamedTuple]]:
+    def get_lines_matrix_for_test(cls, N: int = 3) -> list[tuple[str, _Expected]]:
         lines = cls._get_lines_matrix(N)
-        _Expected = namedtuple("_Expected", ["key", "values", "consensus"])
         expected = []
         matrix_key_value_separator = cls.matrix_key_value_separator()
         matrix_value_content_separator = cls.matrix_value_content_separator()
         alphabet = cls.alphabet()
         for line in lines:
-            key, content = line.strip("\n").split(matrix_key_value_separator, maxsplit=1)
-            content = content.split(matrix_value_content_separator)
-            content = [element for element in content if element != ""]
+            key, content_str = line.strip("\n").split(matrix_key_value_separator, maxsplit=1)
+            content_parts = content_str.split(matrix_value_content_separator)
+            content_parts = [element for element in content_parts if element != ""]
             if key != "P0":
-                if len(content) == len(alphabet):
-                    values = tuple(content)
+                if len(content_parts) == len(alphabet):
+                    values = tuple(content_parts)
                     consensus = None
                 else:
-                    values = tuple(content[:-1])
-                    consensus = content[-1]
+                    values = tuple(content_parts[:-1])
+                    consensus = content_parts[-1]
             else:
-                values = tuple(content)
+                values = tuple(content_parts)
                 consensus = None
             expected.append(_Expected(key, values, consensus))
 
