@@ -5,7 +5,7 @@ length W centred on a query BED interval, with optional masking against
 a set of restraint intervals.
 """
 
-from typing import Literal
+from typing import Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -49,17 +49,17 @@ class WindowSegmentsModel(pa.DataFrameModel):
     @classmethod
     def check_window_start_non_negative(
         cls, series: pa.typing.Series[pa.typing.Int64]
-    ) -> pa.typing.Series[pa.typing.Int64]:
+    ) -> pa.typing.Series[bool]:
         """window_start must be non-negative."""
-        return series[series >= 0]
+        return cast(pa.typing.Series[bool], series >= 0)
 
     @pa.check("genomic_start")
     @classmethod
     def check_genomic_start_non_negative(
         cls, series: pa.typing.Series[pa.typing.Int64]
-    ) -> pa.typing.Series[pa.typing.Int64]:
+    ) -> pa.typing.Series[bool]:
         """genomic_start must be non-negative when not null."""
-        return series[series >= 0]
+        return cast(pa.typing.Series[bool], series >= 0)
 
 
 def decompose_query_window(  # noqa: C901 -- cohesive coordinate-decomposition logic, already covered by characterization tests
@@ -153,7 +153,7 @@ def decompose_query_window(  # noqa: C901 -- cohesive coordinate-decomposition l
     # Entire window outside chromosome → all padding
     if gen_start >= gen_end:
         rows.append(_pad_row(0, window_size))
-        return pd.DataFrame(rows)
+        return cast(DataFrame[WindowSegmentsModel], pd.DataFrame(rows))
 
     # Left chromosome padding
     if left_pad > 0:
@@ -208,7 +208,7 @@ def decompose_query_window(  # noqa: C901 -- cohesive coordinate-decomposition l
     if right_pad > 0:
         rows.append(_pad_row(window_size - right_pad, window_size))
 
-    return pd.DataFrame(rows)
+    return cast(DataFrame[WindowSegmentsModel], pd.DataFrame(rows))
 
 
 def fetch_windowed_sequence(
