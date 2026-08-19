@@ -68,7 +68,7 @@ class WiggleBlock(BaseModel, abc.ABC):
         """Format this block as a wiggle string."""
         return "\n".join((self.header, *self.data_lines))
 
-    def as_series(self, full_range: bool = True, fill_value: float | int = np.nan) -> pd.Series:
+    def as_series(self, full_range: bool = True, fill_value: float = np.nan) -> pd.Series:
         """Return the block as a pandas Series.
 
         If `full_range` is True, the series includes all positions from
@@ -298,7 +298,7 @@ class WigBlockCollection(BaseModel):
     def as_bed3(self) -> tuple[tuple[str, int, int], ...]:
         """Return block ranges as BED3 tuples (0-based half-open)."""
         if not self.blocks:
-            return tuple()
+            return ()
         return tuple((block.chrom, block.start - 1, block.stop) for block in self.blocks)
 
 
@@ -359,7 +359,7 @@ def read_wig(handle: IO[str]) -> Iterator[WiggleBlock]:
     for raw_line in handle:
         line = raw_line.strip()
 
-        if not line or line.startswith("#") or line.startswith("browser "):
+        if not line or line.startswith(("#", "browser ")):
             continue
 
         if line.startswith("track "):
@@ -370,7 +370,7 @@ def read_wig(handle: IO[str]) -> Iterator[WiggleBlock]:
                 data_lines = []
             continue
 
-        if line.startswith("fixedStep ") or line.startswith("variableStep "):
+        if line.startswith(("fixedStep ", "variableStep ")):
             # Flush previous block.
             if block_type is not None and data_lines:
                 yield _build_block(block_type, block_params, data_lines)
@@ -428,7 +428,7 @@ class LazyLoaderBigWig:
                 detected_keys.append(i[1])
 
         # `expected_formatting_keyvalues` provides with the expected list of values for each key.
-        if not all([key in expected_formatting_keyvalues for key in set(detected_keys)]):
+        if not all(key in expected_formatting_keyvalues for key in set(detected_keys)):
             raise KeyError(
                 f"Detected keys: {detected_keys} are not all associated to a "
                 f"list of values in the expected_formatting_keyvalues: {expected_formatting_keyvalues}"
@@ -437,7 +437,7 @@ class LazyLoaderBigWig:
         # The lazy-loader object can be queried as a dict with `lazyloader['key1{key_separator}key2...']`
         # but we need to make sure that the key separator is not part of the key strings.
         for key, values in expected_formatting_keyvalues.items():
-            if any([key_separator in value for value in values]):
+            if any(key_separator in value for value in values):
                 raise ValueError(
                     f"The key separator '{key_separator}' is part of one of the values of key={key}"
                 )
@@ -448,7 +448,7 @@ class LazyLoaderBigWig:
         self._ufmt_filepath = ufmt_filepath
         self._bigwig = {}
         self._expected_key_format: str = self._key_separator.join(
-            map(lambda v: "{" + v + "}", self._detected_keys)
+            ("{" + v + "}" for v in self._detected_keys)
         )
 
     # NOTE: Old version supporting nested dict. Keeping for reference.

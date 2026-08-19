@@ -90,10 +90,7 @@ def identifiers_to_bed6_dataframe(
 ) -> DataFrame[Bed6IntervalsModel]:
     """Parse a list of "chrom:start-end:strand" identifiers to a BED6 dataframe."""
     df = pd.DataFrame(
-        map(
-            lambda v: asdict(parse_name_to_sequence_interval(v)),
-            identifiers,
-        )
+        (asdict(parse_name_to_sequence_interval(v)) for v in identifiers)
     )
     df["name"] = identifiers
     df = df.reset_index().rename(columns={"index": "score"})

@@ -91,7 +91,6 @@ class SliceConfig(BaseModel):
             if anchor_position < 0 or anchor_position >= L:
                 raise ValueError(f"anchor_position out of bounds: {anchor_position} not in [0, {L})")
 
-            #
             start = anchor_position - self.extend_left
             end = anchor_position + self.extend_right + 1  # +1 because end is exclusive
 

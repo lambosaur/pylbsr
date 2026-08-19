@@ -59,8 +59,7 @@ class TransfacMotifExample(ABC):
         lines_matrix = cls.lines_matrix()
         if not N > 0:
             N = 1
-        if N >= len(lines_matrix):
-            N = len(lines_matrix)
+        N = min(len(lines_matrix), N)
         return lines_matrix[: N + 1]  # +1 for the header
 
     @classmethod

@@ -153,6 +153,10 @@ unfixable = [
 # return-type annotations on every test method are pure noise there, unlike in src/.
 "tests/**" = ["D", "ANN"]
 
+# One-record-per-line GFF/genomic-coordinate fixture tables -- wrapping these would make
+# them harder to read, not easier.
+"tests/test_bio/test_gff2chain.py" = ["E501"]
+
 [tool.ruff.lint.pydocstyle]
 
 convention = "google"

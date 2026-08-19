@@ -7,7 +7,6 @@ import pytest
 
 from pylbsr.bio.sequence_window import decompose_query_window, fetch_windowed_sequence
 
-
 CHROM_SIZES = {"chr1": 1000}
 
 # ---------------------------------------------------------------------------

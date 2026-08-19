@@ -16,21 +16,20 @@ from pylbsr.bio.motifs import (
     relabel_motif_collection,
     write_motif_transfac,
 )
-from pylbsr.bio.motifs.motif import (
-    _parse_transfac_matrix_line,
-    _parse_transfac_matrix_lines,
-    _group_transfac_motif_lines,
-    _write_matrix_transfac,
-)
 from pylbsr.bio.motifs._fixtures import (
     EmptyTransfacMotif,
     GenericMinimalTransfacMotif,
     JasparTransfacMotif,
-    MCrossTransfacMotif,
     MalformedTransfacMotif,
+    MCrossTransfacMotif,
     RsatTransfacMotif,
 )
-
+from pylbsr.bio.motifs.motif import (
+    _group_transfac_motif_lines,
+    _parse_transfac_matrix_line,
+    _parse_transfac_matrix_lines,
+    _write_matrix_transfac,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures

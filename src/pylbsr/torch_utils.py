@@ -27,7 +27,7 @@ dtype_str_map = {
 def select_gpu(query: int | str) -> torch.device:
     """Resolve a GPU by index, "cuda:N" string, or device-name substring.
 
-    Examples
+    Examples:
     --------
     select_gpu(0)            # first GPU by index
     select_gpu("cuda:1")     # explicit CUDA string

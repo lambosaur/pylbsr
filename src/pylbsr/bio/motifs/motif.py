@@ -10,9 +10,10 @@ import dataclasses
 import logging
 import warnings
 from collections import defaultdict
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Iterator, TextIO
+from typing import TextIO
 
 import Bio.motifs
 import pandas as pd
@@ -468,7 +469,7 @@ def parse_transfac_motif_lines(
     metadata_footer = [
         _parse_transfac_metadata_line(line=line, key_value_separator=key_value_separator)
         for line in lines_footer
-        if not (line.startswith("XX") or line.startswith("//"))
+        if not (line.startswith(("XX", "//")))
     ]
 
     motif_ids = [m.value for m in metadata_header if m.key == "ID"]
