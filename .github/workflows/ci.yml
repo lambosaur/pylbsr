@@ -10,7 +10,7 @@ jobs:
     # Verifies `pip install .` actually works on a clean system — this is the check that
     # would have caught a dependency silently missing from [project.dependencies].
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -24,8 +24,8 @@ jobs:
         # Each apt-get step is capped so a stalled mirror fails fast with a clear error
         # instead of silently eating the whole job's timeout.
         run: |
-          timeout 5m sudo apt-get update
-          timeout 5m sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
+          timeout 8m sudo apt-get update
+          timeout 8m sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
 
       - name: pip install
         run: pip install .[dev]
@@ -39,7 +39,7 @@ jobs:
     # (which only checks one Python version) and deliberately not using pixi.lock, since a
     # lock pins to one Python version by nature and can't answer this question.
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
@@ -52,8 +52,8 @@ jobs:
 
       - name: Install system prerequisites
         run: |
-          timeout 5m sudo apt-get update
-          timeout 5m sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
+          timeout 8m sudo apt-get update
+          timeout 8m sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
 
       - name: Install tox
         run: pip install tox
