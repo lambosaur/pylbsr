@@ -1,3 +1,5 @@
+"""Coordinate systems and slicing configs for extracting windows around a genomic anchor."""
+
 import warnings
 from enum import Enum
 
@@ -56,9 +58,7 @@ class SliceConfig(BaseModel):
     @model_validator(mode="after")
     def resolve_coordinates(self) -> Self:
         """Resolve coordinates depending on the selected mode."""
-        if self.mode == SliceCoordinateSystem.ABSOLUTE and (
-            self.start is None or self.end is None
-        ):
+        if self.mode == SliceCoordinateSystem.ABSOLUTE and (self.start is None or self.end is None):
             raise ValueError("absolute mode requires start and end")
 
         elif self.mode in [
@@ -73,6 +73,8 @@ class SliceConfig(BaseModel):
     def to_slice(self, L: int, anchor_position: int | None = None) -> slice:
         """Get the slice object for the given L (length of the sequence)."""
         if self.mode == SliceCoordinateSystem.ABSOLUTE:
+            # resolve_coordinates guarantees start/end are set (not None) in this mode.
+            assert self.start is not None and self.end is not None
             start = self.start
             end = self.end
 
@@ -91,7 +93,6 @@ class SliceConfig(BaseModel):
             if anchor_position < 0 or anchor_position >= L:
                 raise ValueError(f"anchor_position out of bounds: {anchor_position} not in [0, {L})")
 
-            #
             start = anchor_position - self.extend_left
             end = anchor_position + self.extend_right + 1  # +1 because end is exclusive
 
@@ -116,4 +117,3 @@ class SliceConfig(BaseModel):
                 )
 
         return slice(start, end)
-

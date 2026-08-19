@@ -1,3 +1,4 @@
+"""General-purpose helpers not specific to any bioinformatics domain."""
 
 import collections
 import glob
@@ -18,14 +19,22 @@ from Bio import bgzf
 from dotmap import DotMap
 
 
-# recursively convert the nested defaultdicts to dicts so that they raise KeyError on missing keys instead of creating new nested defaultdicts
-def recursive_defaultdict_to_dict(d):
+def recursive_defaultdict_to_dict(d: object) -> object:
+    """Recursively convert nested defaultdicts to plain dicts.
+
+    Plain dicts raise KeyError on missing keys instead of silently creating new
+    nested defaultdicts.
+    """
     if isinstance(d, collections.defaultdict):
         d = {k: recursive_defaultdict_to_dict(v) for k, v in d.items()}
     return d
 
 
-def tryint(s):
+def tryint(s: str) -> int | str:
+    """Convert `s` to int if possible, otherwise return it unchanged.
+
+    Useful as a per-token key function for natural sorting.
+    """
     try:
         return int(s)
     except ValueError:
@@ -68,7 +77,7 @@ def set_seed(seed: int = 42) -> None:
     print(f"Seed set to {seed}")
 
 
-def create_randomized_tmp_dir(parent_dir: os.PathLike | None = None) -> str:
+def create_randomized_tmp_dir(parent_dir: os.PathLike | None = None) -> str:  # noqa: C901 -- barely over threshold, straightforward fallback chain
     """Create a randomized temporary directory."""
     # Get the parent tmp dir where to create a randomized tmp dir.
     parent_tmp_dir = None
@@ -88,11 +97,13 @@ def create_randomized_tmp_dir(parent_dir: os.PathLike | None = None) -> str:
         if params_tmp_dir is not None:
             parent_tmp_dir = Path(params_tmp_dir)
 
-    if os.getenv("TMP_DIR") is not None:
-        parent_tmp_dir = Path(os.getenv("TMP_DIR"))
+    tmp_dir_env = os.getenv("TMP_DIR")
+    if tmp_dir_env is not None:
+        parent_tmp_dir = Path(tmp_dir_env)
 
-    if os.getenv("TMP") is not None:
-        parent_tmp_dir = Path(os.getenv("TMP"))
+    tmp_env = os.getenv("TMP")
+    if tmp_env is not None:
+        parent_tmp_dir = Path(tmp_env)
 
     if parent_tmp_dir is None:
         raise ValueError("No temporary directory specified or found.")
@@ -225,7 +236,7 @@ def glob_wildcards(unformatted_filepath: str) -> dict[str, list[str]]:
     fields = [f for _, f, _, _ in parts if f]
     glob_pattern = unformatted_filepath.format(**{f: "*" for f in fields})
 
-    matches = {f: [] for f in fields}
+    matches: dict[str, list[str]] = {f: [] for f in fields}
     for filepath in glob.glob(glob_pattern):
         vals = extract_fields_from_formatted_string(unformatted_filepath, Path(filepath).as_posix())
         for f in fields:
@@ -246,12 +257,10 @@ def get_open_func(filepath: os.PathLike) -> Callable:
         return open
 
 
-
-
 def chunked(lst: Sequence, n: int) -> Iterable:
-        """Yield successive n-sized chunks from lst."""
-        for i in range(0, len(lst), n):
-            yield lst[i : i + n]
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
 
 
 @contextmanager

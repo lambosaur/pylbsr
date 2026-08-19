@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import sklearn.metrics
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from typing_extensions import Self
 
 
@@ -14,8 +16,8 @@ class PRCresults:
     """Handle data structures for plotting a Precision-Recall Curve from a binary classification task.
 
     Instanciation: either build from prediction results with `PRCresults.from_ytrue_ypred`
-    or with `PRCresults.from_prec_rec` (useful when building a new structure from the average performance
-    of a set of PRCresults in a ListPRCresults instance).
+    or with `PRCresults.from_prec_rec` (useful when building a new structure from the
+    average performance of a set of PRCresults in a ListPRCresults instance).
 
     """
 
@@ -23,26 +25,31 @@ class PRCresults:
         self,
         prec: np.ndarray,
         rec: np.ndarray,
-        thresholds: np.ndarray,
+        thresholds: np.ndarray | None,
         base_rec: np.ndarray,
         interp_prec: np.ndarray,
         random_clf: float,
-    ):
+    ) -> None:
+        """Store precomputed precision/recall curve values; see `from_ytrue_ypred`."""
         self.prec = prec
         self.rec = rec
         self.thresholds = thresholds
         self.base_rec = base_rec
         self.interp_prec = interp_prec
         self.random_clf = random_clf
+        self._y_true: np.ndarray | None = None
+        self._y_pred: np.ndarray | None = None
 
     @classmethod
     def from_prec_rec(cls) -> Self:
+        """Not implemented yet."""
         raise NotImplementedError("This method is not implemented yet.")
 
     @classmethod
     def from_ytrue_ypred(
         cls, y_true: np.ndarray, y_pred: np.ndarray, base_rec: np.ndarray | None = None
     ) -> Self:
+        """Build a PRCresults from true labels and predicted scores."""
         prec: np.ndarray
         rec: np.ndarray
         precrec_thresholds: np.ndarray
@@ -82,7 +89,7 @@ class PRCresults:
         result._y_pred = np.array(y_pred, dtype=float)
         if result.auc < rand_clf:
             warnings.warn(
-                f"PRCresults AUPRC={result.auc:.3f} < random baseline={rand_clf:.3f} — "
+                f"PRCresults AUPRC={result.auc:.3f} < random baseline={rand_clf:.3f} - "
                 "scores appear anti-correlated with labels. Call .invert() to flip.",
                 UserWarning,
                 stacklevel=2,
@@ -91,15 +98,19 @@ class PRCresults:
 
     def invert(self) -> "PRCresults":
         """Return a new PRCresults computed with negated scores (flip anti-correlated scorer)."""
+        if self._y_true is None or self._y_pred is None:
+            raise ValueError("invert() requires an instance built via from_ytrue_ypred.")
         return self.__class__.from_ytrue_ypred(self._y_true, -self._y_pred, self.base_rec)
 
     @property
     def auc(self) -> float:
-        return sklearn.metrics.auc(self.base_rec, self.interp_prec)
+        """Area under the precision-recall curve."""
+        return float(sklearn.metrics.auc(self.base_rec, self.interp_prec))
 
     def plot(
-        self, ax: plt.Axes | None = None, plot_params: dict[str, Any] | None = None
-    ) -> tuple[plt.Figure | None, plt.Axes]:
+        self, ax: Axes | None = None, plot_params: dict[str, Any] | None = None
+    ) -> tuple[Figure | None, Axes]:
+        """Plot the precision-recall curve, creating a new figure if `ax` is None."""
         if ax is None:
             fig = plt.figure(figsize=(7, 7))
             ax = fig.add_subplot(1, 1, 1)
@@ -121,28 +132,38 @@ class PRCresults:
 
 
 class ROCresults:
+    """Handle data structures for plotting a ROC Curve from a binary classification task.
+
+    Instanciation: build from prediction results with `ROCresults.from_ytrue_ypred`.
+    """
+
     def __init__(
         self,
         fpr: np.ndarray,
         tpr: np.ndarray,
-        thresholds: np.ndarray,
+        thresholds: np.ndarray | None,
         base_fpr: np.ndarray,
         interp_tpr: np.ndarray,
-    ):
+    ) -> None:
+        """Store precomputed ROC curve values; see `from_ytrue_ypred`."""
         self.fpr = fpr
         self.tpr = tpr
         self.thresholds = thresholds
         self.base_fpr = base_fpr
         self.interp_tpr = interp_tpr
+        self._y_true: np.ndarray | None = None
+        self._y_pred: np.ndarray | None = None
 
     @property
     def auc(self) -> float:
-        return sklearn.metrics.auc(self.base_fpr, self.interp_tpr)
+        """Area under the ROC curve."""
+        return float(sklearn.metrics.auc(self.base_fpr, self.interp_tpr))
 
     @classmethod
     def from_ytrue_ypred(
-        cls, y_true: np.ndarray, y_pred: np.ndarray, base_fpr: np.ndarray = None
+        cls, y_true: np.ndarray, y_pred: np.ndarray, base_fpr: np.ndarray | None = None
     ) -> "ROCresults":
+        """Build a ROCresults from true labels and predicted scores."""
         fpr: np.ndarray
         tpr: np.ndarray
         roc_thresholds: np.ndarray
@@ -168,7 +189,7 @@ class ROCresults:
         result._y_pred = np.array(y_pred, dtype=float)
         if result.auc < 0.5:
             warnings.warn(
-                f"ROCresults AUROC={result.auc:.3f} < 0.5 — scores appear "
+                f"ROCresults AUROC={result.auc:.3f} < 0.5 - scores appear "
                 "anti-correlated with labels. Call .invert() to flip.",
                 UserWarning,
                 stacklevel=2,
@@ -177,11 +198,14 @@ class ROCresults:
 
     def invert(self) -> "ROCresults":
         """Return a new ROCresults computed with negated scores (flip anti-correlated scorer)."""
+        if self._y_true is None or self._y_pred is None:
+            raise ValueError("invert() requires an instance built via from_ytrue_ypred.")
         return self.__class__.from_ytrue_ypred(self._y_true, -self._y_pred, self.base_fpr)
 
     def plot(
-        self, ax: plt.Axes | None = None, plot_params: dict[str, Any] | None = None
-    ) -> tuple[plt.Figure | None, plt.Axes]:
+        self, ax: Axes | None = None, plot_params: dict[str, Any] | None = None
+    ) -> tuple[Figure | None, Axes]:
+        """Plot the ROC curve, creating a new figure if `ax` is None."""
         if ax is None:
             fig = plt.figure(figsize=(7, 7))
             ax = fig.add_subplot(1, 1, 1)
@@ -191,7 +215,7 @@ class ROCresults:
         if plot_params is None:
             plot_params = {}
 
-        params = {
+        params: dict[str, Any] = {
             "alpha": 1.0,
             "color": "#6a0019",
         }
@@ -207,23 +231,30 @@ class ROCresults:
 
 
 class ListROCresults:
-    def __init__(self, list_results: list[ROCresults]):
+    """A collection of ROCresults, e.g. from cross-validation folds, with mean/plotting helpers."""
+
+    def __init__(self, list_results: list[ROCresults]) -> None:
+        """Store `list_results`; raises ValueError if empty or not all ROCresults."""
         if not len(list_results) > 0:
             raise ValueError("list_results must have at least one element")
         if not all(isinstance(x, ROCresults) for x in list_results):
             raise ValueError("list_results must contain only ROCresults instances")
 
         ## Check that all the interpolations bases are the same.
-        # if not all([np.allclose(list_results[0].base_fpr, other.base_fpr) for other in list_results[1:]]):
+        # if not all(
+        #     [np.allclose(list_results[0].base_fpr, other.base_fpr) for other in list_results[1:]]
+        # ):
         #    raise ValueError("All ROCresults instances must have the same base_fpr")
 
         self.list_results = list_results
 
     @property
     def mean_auc(self) -> float:
-        return np.nanmean([result.auc for result in self.list_results])
+        """Mean AUC across all ROCresults in this collection."""
+        return float(np.nanmean([result.auc for result in self.list_results]))
 
     def make_mean_roc_results(self) -> ROCresults:
+        """Build a single ROCresults from the mean TPR curve across this collection."""
         mean_tprs = self.calculate_mean_tprs()
         return ROCresults(
             fpr=self.list_results[0].fpr,
@@ -234,16 +265,18 @@ class ListROCresults:
         )
 
     def calculate_mean_tprs(self) -> np.ndarray:
-        inter_tprs = np.array([result.interp_tpr for result in self.list_results])
-        return np.nanmean(inter_tprs, axis=0)
+        """Mean interpolated TPR curve across this collection."""
+        interp_tprs = np.array([result.interp_tpr for result in self.list_results])
+        return np.asarray(np.nanmean(interp_tprs, axis=0))
 
     def plot(
         self,
         mean_only: bool = False,
-        ax: plt.Axes | None = None,
+        ax: Axes | None = None,
         show_surface: bool = True,
         plot_params: dict[str, Any] | None = None,
-    ) -> tuple[plt.Figure | None, plt.Axes]:
+    ) -> tuple[Figure | None, Axes]:
+        """Plot the mean ROC curve (and, unless `mean_only`, each individual curve)."""
         if plot_params is None:
             plot_params = {}
 
@@ -257,19 +290,19 @@ class ListROCresults:
 
         base_fpr = self.list_results[0].base_fpr.astype(float)
 
-        inter_tprs = []
+        interp_tprs = []
         for result in self.list_results:
             if not mean_only:
-                params = {
+                params: dict[str, Any] = {
                     "alpha": 0.2,
                     "color": default_color,
                 }
                 params.update(plot_params)
                 ax.plot(result.fpr, result.tpr, **params)
 
-            inter_tprs.append(result.interp_tpr)
+            interp_tprs.append(result.interp_tpr)
 
-        inter_tprs = np.array(inter_tprs, dtype=float)
+        inter_tprs = np.array(interp_tprs, dtype=float)
         mean_tprs = np.nanmean(inter_tprs, axis=0)
         std = np.nanstd(inter_tprs, axis=0)
 
@@ -313,27 +346,35 @@ class ListROCresults:
 
 
 class ListPRCresults:
-    def __init__(self, list_results: list[PRCresults]):
+    """A collection of PRCresults, e.g. from cross-validation folds, with mean/plotting helpers."""
+
+    def __init__(self, list_results: list[PRCresults]) -> None:
+        """Store `list_results`; raises ValueError if empty or not all PRCresults."""
         if not len(list_results) > 0:
             raise ValueError("list_results must have at least one element")
         if not all(isinstance(x, PRCresults) for x in list_results):
             raise ValueError("list_results must contain only PRCresults instances")
 
         ## Check that all the interpolations bases are the same.
-        # if not all([np.allclose(list_results[0].base_rec, other.base_rec) for other in list_results[1:]]):
+        # if not all(
+        #     [np.allclose(list_results[0].base_rec, other.base_rec) for other in list_results[1:]]
+        # ):
         #    raise ValueError("All PRCresults instances must have the same base_rec")
 
         self.list_results = list_results
 
     @property
     def mean_auc(self) -> float:
-        return np.nanmean([result.auc for result in self.list_results])
+        """Mean AUC across all PRCresults in this collection."""
+        return float(np.nanmean([result.auc for result in self.list_results]))
 
     @property
     def mean_random_clf(self) -> float:
-        return np.nanmean([result.random_clf for result in self.list_results])
+        """Mean random-classifier baseline across all PRCresults in this collection."""
+        return float(np.nanmean([result.random_clf for result in self.list_results]))
 
     def make_mean_prc_results(self) -> PRCresults:
+        """Build a single PRCresults from the mean precision curve across this collection."""
         mean_precs = self.calculate_mean_precs()
         return PRCresults(
             prec=mean_precs,
@@ -345,16 +386,18 @@ class ListPRCresults:
         )
 
     def calculate_mean_precs(self) -> np.ndarray:
-        inter_precs = np.array([result.interp_prec for result in self.list_results])
-        return np.nanmean(inter_precs, axis=0)
+        """Mean interpolated precision curve across this collection."""
+        interp_precs = np.array([result.interp_prec for result in self.list_results])
+        return np.asarray(np.nanmean(interp_precs, axis=0))
 
     def plot(
         self,
         mean_only: bool = False,
         show_surface: bool = True,
-        ax: plt.Axes | None = None,
+        ax: Axes | None = None,
         plot_params: dict[str, Any] | None = None,
-    ) -> tuple[plt.Figure | None, plt.Axes]:
+    ) -> tuple[Figure | None, Axes]:
+        """Plot the mean precision-recall curve (and, unless `mean_only`, each individual curve)."""
         if plot_params is None:
             plot_params = {}
 
@@ -371,7 +414,7 @@ class ListPRCresults:
         interp_precs = []
         for result in self.list_results:
             if not mean_only:
-                params = {
+                params: dict[str, Any] = {
                     "alpha": 0.2,
                     "color": default_color,
                 }
@@ -406,7 +449,7 @@ class ListPRCresults:
             )
 
         # Random classifier
-        # ax.axhline(self.mean_random_clf, linestyle="--", color="#777777")
+        ax.axhline(self.mean_random_clf, linestyle="--", color="#777777")
 
         ax.set_ylabel("Precision")
         ax.set_xlabel("True Positive Rate / Recall")
@@ -420,211 +463,3 @@ class ListPRCresults:
         plt.tight_layout()
 
         return (fig, ax)
-
-
-#
-#
-# class PairedBinaryClassAndPrediction:
-#    def __init__(self, y_true: np.ndarray, y_pred: np.ndarray):
-#        if not len(y_true) == len(y_pred):
-#            raise ValueError("y_true and y_pred must have the same length")
-#
-#        self.y_true = y_true
-#        self.y_pred = y_pred
-#        self.base_fpr = np.linspace(0, 1, 101)
-#        self.base_rec = np.linspace(0, 1, 101)
-#
-#    def calculate_roc_items(self) -> Dict[str, np.ndarray]:
-#        fpr: np.ndarray
-#        tpr: np.ndarray
-#        roc_thresholds: np.ndarray
-#
-#        fpr, tpr, roc_thresholds = sklearn.metrics.roc_curve(self.y_true, self.y_pred, drop_intermediate=False)
-#
-#        # Interpolate values of y for each x in base_fpr, by guessing the function tpr = f(fpr)
-#        interp_tpr: np.ndarray = np.interp(self.base_fpr, fpr, tpr)
-#        interp_tpr[0] = 0.0
-#
-#        return {
-#            "fpr": fpr,
-#            "tpr": tpr,
-#            "thresholds": roc_thresholds,
-#            "interp_tpr": interp_tpr,
-#        }
-#
-#    def calculate_prc_items(self) -> Dict[str, Union[np.ndarray, float]]:
-#        prec: np.ndarray
-#        rec: np.ndarray
-#        precrec_thresholds: np.ndarray
-#
-#        prec, rec, precrec_thresholds = sklearn.metrics.precision_recall_curve(
-#            self.y_true, self.y_pred, drop_intermediate=False
-#        )
-#
-#        if np.isnan(rec).any():
-#            np.nan_to_num(rec, copy=False)
-#
-#        prec, rec = prec[::-1], rec[::-1]
-#
-#        # Interpolate values of y for each x in base_rec, by guessing the
-#        # function rec = f(prec)
-#        interp_prec: np.ndarray = np.interp(self.base_rec, rec, prec)
-#
-#        rand_clf: float = 1 - (y_true == pd.Series(y_true).value_counts().idxmax()).sum() / y_true.shape[0]
-#
-#
-# def plot_multi_roc(
-#    list_predictions: List[PairedBinaryClassAndPrediction],
-#    color: str = "#cf385b",
-#    color_surface: str = "#777777",
-#    mean_only: bool = False,
-#    ax: Optional[plt.Axes] = None,
-#    show_plot: bool = True,
-# ) -> Tuple[pd.Series, Tuple[Optional[plt.Figure], plt.Axes]]:
-#    """ """
-#    if ax is None:
-#        fig = plt.figure(figsize=(7, 7))
-#        ax = fig.add_subplot(1, 1, 1)
-#    else:
-#        fig = None
-#
-#    # This list will contain data for creating the mean curve from the different sets of predictions.
-#    tprs = []
-#    fprs = []
-#    inter_tprs = []
-#    base_fpr = np.linspace(0, 1, 101)
-#
-#    for pred_structure in list_predictions:
-#        y_true, y_pred = pred_structure.y_true, pred_structure.y_pred
-#
-#        fpr, tpr, roc_thresholds = sklearn.metrics.roc_curve(y_true, y_pred, drop_intermediate=False)
-#
-#        if not mean_only:
-#            ax.plot(fpr, tpr, alpha=0.2, color=color)
-#
-#        tprs.append(tpr)
-#        fprs.append(fpr)
-#
-#        # Interpolate values of y for each x in base_fpr, by guessing the function tpr = f(fpr)
-#        tpr = np.interp(base_fpr, fpr, tpr)
-#        tpr[0] = 0.0
-#        inter_tprs.append(tpr)
-#
-#    inter_tprs = np.array(inter_tprs)
-#    mean_tprs = np.nanmean(inter_tprs, axis=0)
-#    std = np.nanstd(inter_tprs, axis=0)
-#
-#    tprs_upper = np.minimum(mean_tprs + std, 1)
-#    tprs_lower = mean_tprs - std
-#
-#    auc_mean = sklearn.metrics.auc(base_fpr, mean_tprs)
-#
-#    ax.plot(base_fpr, mean_tprs, linewidth=2, color=color, label="Mean ROC curve\n(AUC={:.4})".format(auc_mean))
-#
-#    ax.fill_between(base_fpr, tprs_lower, tprs_upper, color=color_surface, alpha=0.3)
-#
-#    # Random classifier
-#    ax.plot([0, 1], [0, 1], "--", color="#777777")
-#
-#    ax.set_xlabel("False Positive Rate")
-#    ax.set_ylabel("True Positive Rate / Recall")
-#    ax.set_title("ROC curve")
-#    ax.set_xlim(-0.01, 1.01)
-#    ax.set_ylim(-0.01, 1.01)
-#    ax.legend()
-#
-#    ax.set_aspect("equal")
-#
-#    plt.tight_layout()
-#
-#    if show_plot:
-#        plt.show()
-#
-#    # Let's return AUC values per kfold as well as the
-#    # mean AUC from the interpolated data.
-#    auc_vals = [sklearn.metrics.auc(a, b) for a, b in zip(fprs, tprs)]
-#    auc_vals.append(auc_mean)
-#    all_auc = pd.Series(auc_vals, index=list(range(len(list_predictions))) + ["mean_intercept"])
-#    return all_auc, (fig, ax)
-#
-#
-# def plot_multi_prc_curve(
-#    list_predictions: List[PairedBinaryClassAndPrediction],
-#    color="#cf385b",
-#    color_surface="#777777",
-#    mean_only=False,
-#    ax=None,
-#    show_plot=True,
-# ) -> Tuple[pd.Series, Tuple[Optional[plt.Figure], plt.Axes]]:
-#    if ax is None:
-#        fig = plt.figure(figsize=(7, 7))
-#        ax = fig.add_subplot(1, 1, 1)
-#    else:
-#        fig = None
-#
-#    # This list will contain data for creating the mean curve
-#    # from the k-fold predictions.
-#    random_clf_preds = []
-#    recs = []
-#    precs = []
-#    interp_precs = []
-#    base_rec = np.linspace(0, 1, 101)
-#
-#    for pred_structure in list_predictions:
-#        y_true, y_pred = pred_structure.y_true, pred_structure.y_pred
-#
-#        prec, rec, precrec_thresholds = sklearn.metrics.precision_recall_curve(y_true, y_pred)
-#
-#        if np.isnan(rec).any():
-#            np.nan_to_num(rec, copy=False)
-#
-#        prec, rec = prec[::-1], rec[::-1]
-#        if not mean_only:
-#            ax.plot(rec, prec, alpha=0.2, color=color)
-#
-#        recs.append(rec)
-#        precs.append(prec)
-#
-#        # Interpolate values of y for each x in base_rec, by guessing the
-#        # function rec = f(prec)
-#        prec = np.interp(base_rec, rec, prec)
-#        interp_precs.append(prec)
-#
-#        rand_clf = 1 - (y_true == pd.Series(y_true).value_counts().idxmax()).sum() / y_true.shape[0]
-#        random_clf_preds.append(rand_clf)
-#
-#    interp_precs = np.array(interp_precs)
-#    mean_precs = interp_precs.mean(axis=0)
-#    std = interp_precs.std(axis=0)
-#
-#    precs_upper = np.minimum(mean_precs + std, 1)
-#    precs_lower = mean_precs - std
-#
-#    auc_mean = sklearn.metrics.auc(base_rec, mean_precs)
-#
-#    ax.plot(base_rec, mean_precs, color=color, label="Mean precision-recall curve\n(AUC={:.4})".format(auc_mean))
-#    ax.fill_between(base_rec, precs_lower, precs_upper, color=color_surface, alpha=0.3)
-#
-#    # Add the random clf constant.
-#    ax.axhline(np.mean(random_clf_preds), linestyle="--", color="#888888")
-#
-#    ax.set_xlabel("True Positive Rate / Recall")
-#    ax.set_ylabel("Precision")
-#    ax.set_title("Precision-Recall curve")
-#    ax.set_xlim(-0.01, 1.01)
-#    ax.set_ylim(-0.01, 1.01)
-#    ax.legend()
-#
-#    ax.set_aspect("equal")
-#
-#    plt.tight_layout()
-#
-#    if show_plot:
-#        plt.show()
-#
-#    # Let's return AUC values per kfold as well as the
-#    # mean AUC from the interpolated data.
-#    auc_vals = [sklearn.metrics.auc(a, b) for a, b in zip(recs, precs)]
-#    auc_vals.append(auc_mean)
-#    all_auc = pd.Series(auc_vals, index=list(range(len(list_predictions))) + ["mean_intercept"])
-#    return all_auc, (fig, ax)

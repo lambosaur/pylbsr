@@ -32,11 +32,13 @@ def coordinates_from_binary_masks(binary_masks: np.ndarray) -> np.ndarray:
     Returns:
         Object array with the same leading shape; each element is a (k, 2) int64 array.
     """
-    return np.vectorize(
-        coordinates_from_binary_mask,
-        signature="(n)->()",
-        otypes=[object],
-    )(binary_masks)
+    return np.asarray(
+        np.vectorize(
+            coordinates_from_binary_mask,
+            signature="(n)->()",
+            otypes=[object],
+        )(binary_masks)
+    )
 
 
 def intervals_to_span_masks(
@@ -87,7 +89,7 @@ def combine_span_masks_on_identifiers(
             f"identifiers length ({len(identifiers)}) must match "
             f"span_masks rows ({span_masks.shape[0]})."
         )
-    unique_ids, inverse = np.unique(identifiers, return_inverse=True)
+    unique_ids, inverse = np.unique(np.asarray(identifiers), return_inverse=True)
     combined = np.zeros((len(unique_ids), span_masks.shape[1]), dtype=int)
     np.add.at(combined, inverse, span_masks)
     return (combined > 0).astype(np.int64)
@@ -182,7 +184,5 @@ def relative_coordinates_to_scattered_span_masks(
         raise ValueError(f"Unexpected identifiers: {unexpected}")
 
     span_masks = intervals_to_span_masks(starts, ends, length)
-    combined = combine_span_masks_on_identifiers(span_masks, identifiers)
+    combined = combine_span_masks_on_identifiers(span_masks, list(identifiers))
     return scatter_span_masks(combined, list(np.unique(identifiers)), all_identifiers)
-
-

@@ -7,7 +7,6 @@ import pytest
 
 from pylbsr.bio.sequence_window import decompose_query_window, fetch_windowed_sequence
 
-
 CHROM_SIZES = {"chr1": 1000}
 
 # ---------------------------------------------------------------------------
@@ -108,8 +107,14 @@ class TestDecomposeQueryWindow:
 
         restraints = pbt.BedTool("chr1\t120\t180", from_string=True)
         df = decompose_query_window(
-            "chr1", 100, 200, "+", CHROM_SIZES, window_size=100,
-            restraint_intervals=restraints, restraint_mode="keep",
+            "chr1",
+            100,
+            200,
+            "+",
+            CHROM_SIZES,
+            window_size=100,
+            restraint_intervals=restraints,
+            restraint_mode="keep",
         )
         _assert_covers_window(df, 100)
         valid = df[~df["is_padding"] & ~df["is_masked"]]
@@ -125,8 +130,14 @@ class TestDecomposeQueryWindow:
 
         restraints = pbt.BedTool("chr1\t120\t180", from_string=True)
         df = decompose_query_window(
-            "chr1", 100, 200, "+", CHROM_SIZES, window_size=100,
-            restraint_intervals=restraints, restraint_mode="exclude",
+            "chr1",
+            100,
+            200,
+            "+",
+            CHROM_SIZES,
+            window_size=100,
+            restraint_intervals=restraints,
+            restraint_mode="exclude",
         )
         _assert_covers_window(df, 100)
         masked = df[df["is_masked"]]
@@ -227,9 +238,16 @@ class TestFetchWindowedSequence:
         fasta = self._mock_fasta("A" * 1000)
         restraints = pbt.BedTool("chr1\t120\t180", from_string=True)
         result = fetch_windowed_sequence(
-            "chr1", 100, 200, "+", CHROM_SIZES, window_size=100,
-            fasta=fasta, fill_char="N",
-            restraint_intervals=restraints, restraint_mode="keep",
+            "chr1",
+            100,
+            200,
+            "+",
+            CHROM_SIZES,
+            window_size=100,
+            fasta=fasta,
+            fill_char="N",
+            restraint_intervals=restraints,
+            restraint_mode="keep",
         )
         # positions [0,20) and [80,100) in the window are masked → 'N'
         assert result[:20] == "N" * 20
@@ -246,6 +264,7 @@ class TestFetchWindowedSequence:
             "chr1", 100, 200, "-", CHROM_SIZES, window_size=100, fasta=fasta, fill_char="N"
         )
         from Bio.Seq import Seq
+
         assert result_rev == str(Seq(result_fwd).reverse_complement())
         assert len(result_rev) == 100
 
@@ -270,11 +289,25 @@ class TestFetchWindowedSequence:
     def test_center_bias_right_shifts_result(self) -> None:
         fasta = self._mock_fasta("ACGTACGTAC" * 100)
         result_left = fetch_windowed_sequence(
-            "chr1", 10, 12, "+", CHROM_SIZES, window_size=4, fasta=fasta, fill_char="N",
+            "chr1",
+            10,
+            12,
+            "+",
+            CHROM_SIZES,
+            window_size=4,
+            fasta=fasta,
+            fill_char="N",
             center_bias="left",
         )
         result_right = fetch_windowed_sequence(
-            "chr1", 10, 12, "+", CHROM_SIZES, window_size=4, fasta=fasta, fill_char="N",
+            "chr1",
+            10,
+            12,
+            "+",
+            CHROM_SIZES,
+            window_size=4,
+            fasta=fasta,
+            fill_char="N",
             center_bias="right",
         )
         seq = "ACGTACGTAC" * 100

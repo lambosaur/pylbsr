@@ -5,7 +5,7 @@ length W centred on a query BED interval, with optional masking against
 a set of restraint intervals.
 """
 
-from typing import Literal
+from typing import Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -49,20 +49,20 @@ class WindowSegmentsModel(pa.DataFrameModel):
     @classmethod
     def check_window_start_non_negative(
         cls, series: pa.typing.Series[pa.typing.Int64]
-    ) -> pa.typing.Series[pa.typing.Int64]:
+    ) -> pa.typing.Series[bool]:
         """window_start must be non-negative."""
-        return series[series >= 0]
+        return cast(pa.typing.Series[bool], series >= 0)
 
     @pa.check("genomic_start")
     @classmethod
     def check_genomic_start_non_negative(
         cls, series: pa.typing.Series[pa.typing.Int64]
-    ) -> pa.typing.Series[pa.typing.Int64]:
+    ) -> pa.typing.Series[bool]:
         """genomic_start must be non-negative when not null."""
-        return series[series >= 0]
+        return cast(pa.typing.Series[bool], series >= 0)
 
 
-def decompose_query_window(
+def decompose_query_window(  # noqa: C901 -- cohesive coordinate-decomposition logic, already covered by characterization tests
     chrom: str,
     start: int,
     end: int,
@@ -153,7 +153,7 @@ def decompose_query_window(
     # Entire window outside chromosome → all padding
     if gen_start >= gen_end:
         rows.append(_pad_row(0, window_size))
-        return pd.DataFrame(rows)
+        return cast(DataFrame[WindowSegmentsModel], pd.DataFrame(rows))
 
     # Left chromosome padding
     if left_pad > 0:
@@ -176,7 +176,9 @@ def decompose_query_window(
             starts_v = np.array([s for s, _ in valid_list], dtype=np.int64)
             ends_v = np.array([e for _, e in valid_list], dtype=np.int64)
             # Merge overlapping/adjacent intervals via binary mask
-            valid_mask = intervals_to_span_masks(starts_v, ends_v, gen_len).any(axis=0).astype(np.int64)
+            valid_mask = (
+                intervals_to_span_masks(starts_v, ends_v, gen_len).any(axis=0).astype(np.int64)
+            )
             valid_segs = coordinates_from_binary_mask(valid_mask)
         else:
             valid_segs = np.empty((0, 2), dtype=np.int64)
@@ -206,7 +208,7 @@ def decompose_query_window(
     if right_pad > 0:
         rows.append(_pad_row(window_size - right_pad, window_size))
 
-    return pd.DataFrame(rows)
+    return cast(DataFrame[WindowSegmentsModel], pd.DataFrame(rows))
 
 
 def fetch_windowed_sequence(
@@ -270,7 +272,9 @@ def fetch_windowed_sequence(
         if row["is_padding"] or row["is_masked"]:
             parts.append(fill_char * seg_len)
         else:
-            parts.append(str(fasta[row["genomic_chrom"]][int(row["genomic_start"]):int(row["genomic_end"])]))
+            parts.append(
+                str(fasta[row["genomic_chrom"]][int(row["genomic_start"]) : int(row["genomic_end"])])
+            )
 
     result = "".join(parts)
 

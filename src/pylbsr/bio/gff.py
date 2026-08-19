@@ -12,20 +12,20 @@ os.environ.setdefault("PANDERA_BACKEND", "pandas")
 # sys.modules["pyspark"] = None
 import warnings
 from dataclasses import dataclass
+from typing import cast
 
 import numpy as np
 import pandas as pd
-import pandera as pa
-import pandera.pandas as pa
 import pybedtools as pbt
-from pandera import DataFrameModel, Field, check
-from pandera.pandas import DataFrameModel, Field, check
+from pandera.pandas import DataFrameModel, Field, check, dataframe_check
 from pandera.typing import DataFrame, Series
 from typing_extensions import Self
 
 
 @dataclass
 class GenomicInterval:
+    """A single genomic interval (chrom, start, end, strand)."""
+
     chrom: str
     start: int
     end: int
@@ -63,12 +63,13 @@ class GFFSchema(DataFrameModel):
         return pd.isna(s) or s in {"0", "1", "2", "."}
 
     # --- dataframe-level checks -------------------------------------------
-    @check
+    @dataframe_check()
     def _end_ge_start(cls, df: pd.DataFrame) -> pd.Series:
         return df["end"] >= df["start"]
 
     class Config:
         """Pandera configuration for GFFSchema."""
+
         coerce = True  # automatically cast types
         strict = True  # no extra columns allowed
 
@@ -115,7 +116,7 @@ def read_gff(filepath: os.PathLike, validate: bool = False) -> DataFrame[GFFSche
         df["end"] = df["end"].astype(int)
         df["score"] = pd.to_numeric(df["score"], errors="coerce")
 
-    return df
+    return cast(DataFrame[GFFSchema], df)
 
 
 def split_attributes(col: pd.Series, kv_sep: str = "=", field_sep: str = ";") -> pd.DataFrame:
@@ -139,6 +140,7 @@ def split_attributes(col: pd.Series, kv_sep: str = "=", field_sep: str = ";") ->
 
     return pd.json_normalize(list(col.apply(parse)))
 
+
 def write_gff(
     gff: pd.DataFrame,
     filepath: os.PathLike,
@@ -157,10 +159,11 @@ def write_gff(
             mode="a",
         )
 
+
 class ExtendedGFF:
     """Class representing a GFF file with split attributes."""
 
-    def __init__(self, gff: pd.DataFrame, attributes: pd.DataFrame):
+    def __init__(self, gff: pd.DataFrame, attributes: pd.DataFrame) -> None:
         """Initialize an ExtendedGFF instance."""
         self._gff = gff
         self._attributes = attributes
@@ -255,7 +258,6 @@ def gff_transcript_segments_to_bed(gff: pd.DataFrame) -> pd.DataFrame:
     else:
         bed_introns["name"] = pd.Series(dtype=str)
 
-
     # Merge all segments back
     bed6_cols = ["chrom", "start", "end", "name", "score", "strand"]
 
@@ -322,4 +324,3 @@ def get_transcript_boundaries_from_gff(gff: pd.DataFrame) -> GenomicInterval:
             strand=gff.iloc[0]["strand"],
         )
         return transcript_boundaries
-

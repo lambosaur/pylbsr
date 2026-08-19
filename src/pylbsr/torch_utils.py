@@ -1,6 +1,6 @@
-import logging
+"""GPU/device selection helpers for torch."""
 
-import numpy as np
+import logging
 
 try:
     import torch
@@ -11,7 +11,6 @@ except ImportError as e:
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
 
 
 dtype_str_map = {
@@ -25,11 +24,10 @@ dtype_str_map = {
 }
 
 
-
 def select_gpu(query: int | str) -> torch.device:
     """Resolve a GPU by index, "cuda:N" string, or device-name substring.
 
-    Examples
+    Examples:
     --------
     select_gpu(0)            # first GPU by index
     select_gpu("cuda:1")     # explicit CUDA string
@@ -67,7 +65,7 @@ def select_gpu(query: int | str) -> torch.device:
         idx = matches[0]
 
     if idx < 0 or idx >= n:
-        raise ValueError(f"GPU index {idx} out of range (0–{n - 1}).")
+        raise ValueError(f"GPU index {idx} out of range (0-{n - 1}).")
 
     device = torch.device(f"cuda:{idx}")
     torch.cuda.set_device(idx)
@@ -76,6 +74,11 @@ def select_gpu(query: int | str) -> torch.device:
 
 
 def get_device(requested_device: str) -> torch.device:
+    """Resolve `requested_device` ("cuda", "cuda:N", "cpu", ...) to a torch.device.
+
+    Falls back to CPU (with a logged warning) if the requested device is
+    unavailable or invalid.
+    """
     if requested_device.startswith("cuda"):
         if torch.cuda.is_available():
             try:
@@ -99,9 +102,8 @@ def get_device(requested_device: str) -> torch.device:
             device = torch.device(requested_device)
             logger.info(f"Using device: {device}")
             return device
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- torch.device() error types for arbitrary strings aren't enumerable; fall back to CPU
             logger.warning(f"Unrecognized device '{requested_device}': {e}. Using CPU.")
 
     logger.info("Using CPU")
     return torch.device("cpu")
-

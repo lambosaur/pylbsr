@@ -5,11 +5,18 @@ on:
     branches: [main]
   pull_request:
 
+# Cancel a still-running CI run for this branch/PR when a newer push arrives, instead of
+# letting stale runs finish -- avoids queueing behind runs whose result no longer matters.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pip-install-and-test:
     # Verifies `pip install .` actually works on a clean system — this is the check that
     # would have caught a dependency silently missing from [project.dependencies].
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -20,9 +27,11 @@ jobs:
       - name: Install system prerequisites
         # build-essential + zlib1g-dev: needed to compile pybedtools' C extension.
         # bedtools: the CLI binary pybedtools shells out to at runtime.
+        # Each apt-get step is capped so a stalled mirror fails fast with a clear error
+        # instead of silently eating the whole job's timeout.
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
+          timeout 8m sudo apt-get update
+          timeout 8m sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
 
       - name: pip install
         run: pip install .[dev]
@@ -36,6 +45,7 @@ jobs:
     # (which only checks one Python version) and deliberately not using pixi.lock, since a
     # lock pins to one Python version by nature and can't answer this question.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
@@ -48,8 +58,8 @@ jobs:
 
       - name: Install system prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
+          timeout 8m sudo apt-get update
+          timeout 8m sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
 
       - name: Install tox
         run: pip install tox
@@ -61,9 +71,15 @@ jobs:
         run: tox -e py
 
   lint-and-typecheck:
-    # Kept independent of the pip-install-and-test job's build toolchain: ruff/mypy don't
-    # need pybedtools compiled, just installed directly, so this stays fast.
+    # ruff (check + format) is pure syntax, no runtime deps needed. mypy is different: it
+    # needs the actual dependency graph installed to resolve third-party return types
+    # accurately (e.g. matplotlib.colors.to_hex() -> str) -- without it, every third-party
+    # call resolves to Any and no-any-return fires on functions that declare a concrete
+    # return type, even though the code is correctly typed against what's really installed.
+    # So this job pays the same build cost as pip-install-and-test rather than staying
+    # "independent" of it.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -71,8 +87,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install lint/type-check tools
-        run: pip install "ruff>=0.11,<1.0" "mypy>=1.11,<2.0"
+      - name: Install system prerequisites
+        run: |
+          timeout 8m sudo apt-get update
+          timeout 8m sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
+
+      - name: pip install
+        run: pip install ".[dev]"
 
       - name: ruff check
         run: ruff check .

@@ -1,7 +1,9 @@
-# /usr/bin/env python3
-# Documentation on motif formats:
-# - TRANSFAC (MEME): https://meme-suite.org/meme/doc/transfac-format.html
-# - MEME format: https://meme-suite.org/meme/doc/meme-format.html
+"""TRANSFAC motif parsing/writing and the Motif dataclass.
+
+Documentation on motif formats:
+- TRANSFAC (MEME): https://meme-suite.org/meme/doc/transfac-format.html
+- MEME format: https://meme-suite.org/meme/doc/meme-format.html
+"""
 
 from __future__ import annotations
 
@@ -10,9 +12,10 @@ import dataclasses
 import logging
 import warnings
 from collections import defaultdict
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Iterator, TextIO
+from typing import TextIO, cast
 
 import Bio.motifs
 import pandas as pd
@@ -73,20 +76,18 @@ class Motif:
 
     id: str
     matrix: pd.DataFrame
-    metadata: dict[str, list[_ParsedMetadataLine]] = field(
-        default_factory=lambda: defaultdict(list)
-    )
+    metadata: dict[str, list[_ParsedMetadataLine]] = field(default_factory=lambda: defaultdict(list))
     consensus: str | None = None
     matrix_type: str | None = None
 
     def __post_init__(self) -> None:
+        """Validate the parsed matrix and metadata."""
         if self.matrix.empty:
             raise MotifError("Dataframe matrix is empty.")
 
-        if list(self.matrix.index)[0] != "01":
-            raise MotifError(
-                f"Motif PWM index should start at '01'; got {list(self.matrix.index)[0]!r}"
-            )
+        first_index = next(iter(self.matrix.index))
+        if first_index != "01":
+            raise MotifError(f"Motif PWM index should start at '01'; got {first_index!r}")
 
         if "header" not in self.metadata:
             raise MotifError("Expected metadata list 'header' not found.")
@@ -388,9 +389,8 @@ def _group_handle_lines_per_motif(lines: Iterator[str]) -> list[list[str]]:
             result.append(current)
             current = []
 
-    if current:
-        if not (len(current) == 1 and current[0] == "\n"):
-            raise MotifError(f"Last motif is not terminated by '//' line: {current}")
+    if current and not (len(current) == 1 and current[0] == "\n"):
+        raise MotifError(f"Last motif is not terminated by '//' line: {current}")
 
     return result
 
@@ -417,9 +417,12 @@ def parse_transfac_motif_lines(
 
     Args:
         lines: Lines for a single motif (as read from a TRANSFAC file).
-        key_value_separator: Separator between KEY and VALUE in metadata lines. Defaults to "  ".
-        matrix_key_value_separator: Separator between KEY and VALUE in matrix lines. Defaults to "  ".
-        matrix_value_content_separator: Separator between values within a matrix line. Defaults to " ".
+        key_value_separator: Separator between KEY and VALUE in metadata lines.
+            Defaults to "  ".
+        matrix_key_value_separator: Separator between KEY and VALUE in matrix lines.
+            Defaults to "  ".
+        matrix_value_content_separator: Separator between values within a matrix line.
+            Defaults to " ".
         rename_columns: Optional dict to rename columns parsed from the P0 line. Defaults to None.
         force_numeric: If True, raise MotifError when matrix values cannot be cast to numeric.
             If False (default), warn and keep values as strings. Defaults to False.
@@ -468,7 +471,7 @@ def parse_transfac_motif_lines(
     metadata_footer = [
         _parse_transfac_metadata_line(line=line, key_value_separator=key_value_separator)
         for line in lines_footer
-        if not (line.startswith("XX") or line.startswith("//"))
+        if not (line.startswith(("XX", "//")))
     ]
 
     motif_ids = [m.value for m in metadata_header if m.key == "ID"]
@@ -569,9 +572,7 @@ def _write_matrix_transfac(
         ValueError: if consensus length does not match matrix row count.
     """
     if consensus and len(consensus) != matrix.shape[0]:
-        raise ValueError(
-            f"Consensus length {len(consensus)} != matrix row count {matrix.shape[0]}."
-        )
+        raise ValueError(f"Consensus length {len(consensus)} != matrix row count {matrix.shape[0]}.")
 
     header = f"P0{matrix_key_value_separator}" + matrix_value_content_separator.join(
         str(column) for column in matrix.columns
@@ -672,7 +673,7 @@ def motif_to_biopython_motif(motif: Motif) -> Bio.motifs.Motif:
     handle = StringIO()
     write_motif_transfac(handle=handle, motif=motif, minimal=True)
     handle.seek(0)
-    return Bio.motifs.read(handle, "transfac")
+    return cast(Bio.motifs.Motif, Bio.motifs.read(handle, "transfac"))
 
 
 # ---------------------------------------------------------------------------
@@ -773,7 +774,9 @@ def relabel_motif_collection(
             new_id = f"{original_id}_{id_counts[original_id]}"
             motif.id = new_id
             motif.set_metadata(key="ID", subset="header", value=new_id)
-            motif.add_metadata(subset="footer", key="CC", value=f"Original duplicated ID: {original_id}")
+            motif.add_metadata(
+                subset="footer", key="CC", value=f"Original duplicated ID: {original_id}"
+            )
 
         relabeled.append(motif)
 

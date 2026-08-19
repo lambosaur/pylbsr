@@ -63,6 +63,7 @@ dev = [
 ml = [
     #"tensorflow >=2.16",
     "torch >=2.5",
+    "scikit-learn >=1.3,<2",
 ]
 
 
@@ -146,6 +147,16 @@ unfixable = [
   #"W504",  # prevent line break after binary operator ; NOTE: pycodestyle rule, not handled by ruff.
 ]
 
+
+[tool.ruff.lint.per-file-ignores]
+
+# Test files: names are self-documenting, and tests always return None -- docstrings and
+# return-type annotations on every test method are pure noise there, unlike in src/.
+"tests/**" = ["D", "ANN"]
+
+# One-record-per-line GFF/genomic-coordinate fixture tables -- wrapping these would make
+# them harder to read, not easier.
+"tests/test_bio/test_gff2chain.py" = ["E501"]
 
 [tool.ruff.lint.pydocstyle]
 

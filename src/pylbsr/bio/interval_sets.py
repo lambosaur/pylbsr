@@ -54,7 +54,7 @@ def build_membership(
 
     Args:
         named_bedtools: Mapping of set name to BedTool. Key order is preserved.
-        frac: Minimum reciprocal overlap fraction (0–1). Both the query region and
+        frac: Minimum reciprocal overlap fraction (0-1). Both the query region and
             the matching subject region must be covered by at least this fraction.
         stranded: If ``True``, only same-strand overlaps are counted (bedtools
             ``-s`` flag). All BedTools must have at least 6 columns (BED6) with a
@@ -87,14 +87,16 @@ def build_membership(
             df.columns = pd.Index(["chrom", "start", "end", "strand"])
             df.insert(3, "name", range(len(df)))
             # BED6 layout required for -s: chrom start end name score strand
-            df_bed = pd.DataFrame({
-                "chrom": df["chrom"],
-                "start": df["start"],
-                "end": df["end"],
-                "name": df["name"],
-                "score": 0,
-                "strand": df["strand"],
-            })
+            df_bed = pd.DataFrame(
+                {
+                    "chrom": df["chrom"],
+                    "start": df["start"],
+                    "end": df["end"],
+                    "name": df["name"],
+                    "score": 0,
+                    "strand": df["strand"],
+                }
+            )
             out_names = ["chrom", "start", "end", "name", "score", "strand"]
         else:
             # BED3 → BED4: chrom start end name
@@ -113,8 +115,7 @@ def build_membership(
             if subject_key == query_key:
                 continue
             overlapping: set[Any] = set(
-                bt_named.intersect(bt_subject, **intersect_kw)
-                .to_dataframe(names=out_names)["name"]
+                bt_named.intersect(bt_subject, **intersect_kw).to_dataframe(names=out_names)["name"]
             )
             df_result[subject_key] = df_result["name"].isin(overlapping)
 
@@ -133,7 +134,7 @@ def pairwise_intersect_counts(
     Args:
         named_bedtools: Mapping of set name to BedTool. Key order determines
             the row/column order of the returned matrix.
-        frac: Minimum reciprocal overlap fraction (0–1).
+        frac: Minimum reciprocal overlap fraction (0-1).
         stranded: If ``True``, only same-strand overlaps are counted (bedtools
             ``-s`` flag). All BedTools must have at least 6 columns (BED6).
 
@@ -164,9 +165,7 @@ def pairwise_intersect_counts(
                 inter[i, j] = counts[name_i]
             else:
                 inter[i, j] = (
-                    named_bedtools[name_i]
-                    .intersect(named_bedtools[name_j], **intersect_kw)
-                    .count()
+                    named_bedtools[name_i].intersect(named_bedtools[name_j], **intersect_kw).count()
                 )
     return counts, inter
 
@@ -207,7 +206,7 @@ class BedSetComparison:
     - **Non-redundant catalog** (``plot_upset(anchor=None)``): each region is
       attributed to the highest-priority set (first key in ``named_bedtools``) that
       claims it; lower-priority sets contribute only their novel regions.  All
-      2ᴺ−1 combination bins are visible and each region appears exactly once.
+      2ᴺ-1 combination bins are visible and each region appears exactly once.
 
     All expensive bedtools intersections are deferred until first property access and
     cached.
@@ -241,7 +240,7 @@ class BedSetComparison:
         Args:
             named_bedtools: Mapping of set name to BedTool. Key insertion order is
                 preserved and used as the row/column order in matrices and plots.
-            frac: Minimum reciprocal overlap fraction (0–1). An overlap counts only
+            frac: Minimum reciprocal overlap fraction (0-1). An overlap counts only
                 when the intersecting segment covers at least this fraction of both
                 the query region (bedtools ``-f``) and the subject region (``-F``).
             stranded: If ``True``, only same-strand overlaps are counted (bedtools
@@ -270,9 +269,7 @@ class BedSetComparison:
             always ``True``.
         """
         if self._membership is None:
-            self._membership = build_membership(
-                self.named_bedtools, self.frac, self.stranded
-            )
+            self._membership = build_membership(self.named_bedtools, self.frac, self.stranded)
         return self._membership
 
     @property
@@ -313,7 +310,7 @@ class BedSetComparison:
         """
         counts, inter = self._pairwise
         row_totals = np.array([counts[k] for k in self.set_names], dtype=float)
-        mat = inter.astype(float) / row_totals[:, np.newaxis]
+        mat = np.asarray(inter.astype(float) / row_totals[:, np.newaxis])
         np.fill_diagonal(mat, 1.0)
         return mat
 
@@ -358,7 +355,7 @@ class BedSetComparison:
         anchor: str | None = None,
         label: str = "",
         figsize: tuple[float, float] = (14, 6),
-        **upset_kwargs: Any,
+        **upset_kwargs: Any,  # noqa: ANN401 -- forwarded as-is to upsetplot.UpSet
     ) -> tuple[plt.Figure, dict]:  # type: ignore[type-arg]
         """Plot an UpSet diagram of set membership across all named sets.
 
@@ -442,7 +439,7 @@ class BedSetComparison:
         totals_ax.set_xlabel("Set size\n(# regions)")
 
         strand_note = ", stranded" if self.stranded else ""
-        title_type = f" – {label}" if label else ""
+        title_type = f" - {label}" if label else ""
         if anchor is None:
             anchor_note = "complete"
             subtitle = "all regions attributed to highest-priority set (key order)"
@@ -462,7 +459,7 @@ class BedSetComparison:
         label: str = "",
         highlight_top_right: bool = False,
         figsize: tuple[float, float] = (6, 6),
-        **heatmap_kwargs: Any,
+        **heatmap_kwargs: Any,  # noqa: ANN401 -- forwarded as-is to seaborn.heatmap
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot a pairwise intersection fraction heatmap.
 
@@ -526,7 +523,7 @@ class BedSetComparison:
                     )
 
         strand_note = ", stranded" if self.stranded else ""
-        title_type = f" – {label}" if label else ""
+        title_type = f" - {label}" if label else ""
         ax.set_title(
             f"Pairwise intersection fractions{title_type}"
             f" (≥{self.frac:.0%} reciprocal{strand_note})\n"

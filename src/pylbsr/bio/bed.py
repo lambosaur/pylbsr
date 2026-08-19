@@ -1,6 +1,8 @@
+"""BED interval dataclasses, Pandera schemas, and parsing helpers."""
+
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
-from typing import Literal
+from typing import Literal, cast
 
 import pandas as pd
 import pandera.pandas as pa
@@ -12,11 +14,11 @@ bed6_cols = ["chrom", "start", "end", "name", "score", "strand"]
 narrowpeak_cols = [
     *bed6_cols,
     *[
-    "SignalValue",
-    "Pvalue",
-    "Qvalue",
-    "PeakSummitOffset",
-]
+        "SignalValue",
+        "Pvalue",
+        "Qvalue",
+        "PeakSummitOffset",
+    ],
 ]
 
 
@@ -31,8 +33,8 @@ class GenomicInterval:
     score: int | float | str
     strand: Literal["+", "-"]
 
-    def __post_init__(self):
-        # Enforce [0, end) interval.
+    def __post_init__(self) -> None:
+        """Enforce [0, end) interval."""
         if self.start < 0:
             raise ValueError(f"Start position {self.start} must be non-negative.")
         if self.start >= self.end:
@@ -54,24 +56,27 @@ class Bed6IntervalsModel(pa.DataFrameModel):
     @pa.check("start")
     def check_start_greater_than_zero(
         cls, series: pa.typing.Series[pa.typing.Int64]
-    ) -> pa.typing.Series[pa.typing.Int64]:
-        return series[series > 0]
+    ) -> pa.typing.Series[bool]:
+        """`start` must be strictly positive."""
+        return cast(pa.typing.Series[bool], series > 0)
 
     @pa.check("end")
     def check_end_greater_than_zero(
         cls, series: pa.typing.Series[pa.typing.Int64]
-    ) -> pa.typing.Series[pa.typing.Int64]:
-        return series[series > 0]
+    ) -> pa.typing.Series[bool]:
+        """`end` must be strictly positive."""
+        return cast(pa.typing.Series[bool], series > 0)
 
-    @pa.check("end")
-    def check_end_greater_than_start(
-        cls, series: pa.typing.Series[pa.typing.Int64]
-    ) -> pa.typing.Series[pa.typing.Int64]:
-        return series[series > series["start"]]
+    @pa.dataframe_check()
+    def check_end_greater_than_start(cls, df: pd.DataFrame) -> pa.typing.Series[bool]:
+        """`end` must be strictly greater than `start`."""
+        return cast(pa.typing.Series[bool], df["end"] > df["start"])
 
 
 @dataclass
 class SequenceInterval:
+    """A simple (chrom, start, end, strand) interval, as parsed from a "chrom:start-end:strand" id."""
+
     chrom: str
     start: int
     end: int
@@ -89,14 +94,8 @@ def identifiers_to_bed6_dataframe(
     identifiers: Sequence[str],
 ) -> DataFrame[Bed6IntervalsModel]:
     """Parse a list of "chrom:start-end:strand" identifiers to a BED6 dataframe."""
-    df = pd.DataFrame(
-        map(
-            lambda v: asdict(parse_name_to_sequence_interval(v)),
-            identifiers,
-        )
-    )
+    df = pd.DataFrame(asdict(parse_name_to_sequence_interval(v)) for v in identifiers)
     df["name"] = identifiers
     df = df.reset_index().rename(columns={"index": "score"})
 
-    return df.loc[:, bed6_cols]
-
+    return cast(DataFrame[Bed6IntervalsModel], df.loc[:, bed6_cols])
