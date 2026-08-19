@@ -63,6 +63,7 @@ dev = [
 ml = [
     #"tensorflow >=2.16",
     "torch >=2.5",
+    "scikit-learn >=1.3,<2",
 ]
 
 
