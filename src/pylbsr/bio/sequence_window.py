@@ -62,7 +62,7 @@ class WindowSegmentsModel(pa.DataFrameModel):
         return series[series >= 0]
 
 
-def decompose_query_window(
+def decompose_query_window(  # noqa: C901 -- cohesive coordinate-decomposition logic, already covered by characterization tests
     chrom: str,
     start: int,
     end: int,
@@ -176,7 +176,9 @@ def decompose_query_window(
             starts_v = np.array([s for s, _ in valid_list], dtype=np.int64)
             ends_v = np.array([e for _, e in valid_list], dtype=np.int64)
             # Merge overlapping/adjacent intervals via binary mask
-            valid_mask = intervals_to_span_masks(starts_v, ends_v, gen_len).any(axis=0).astype(np.int64)
+            valid_mask = (
+                intervals_to_span_masks(starts_v, ends_v, gen_len).any(axis=0).astype(np.int64)
+            )
             valid_segs = coordinates_from_binary_mask(valid_mask)
         else:
             valid_segs = np.empty((0, 2), dtype=np.int64)
