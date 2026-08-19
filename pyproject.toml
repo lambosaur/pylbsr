@@ -147,6 +147,12 @@ unfixable = [
 ]
 
 
+[tool.ruff.lint.per-file-ignores]
+
+# Test files: names are self-documenting, and tests always return None -- docstrings and
+# return-type annotations on every test method are pure noise there, unlike in src/.
+"tests/**" = ["D", "ANN"]
+
 [tool.ruff.lint.pydocstyle]
 
 convention = "google"
