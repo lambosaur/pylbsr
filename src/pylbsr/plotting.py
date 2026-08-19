@@ -1,3 +1,5 @@
+"""Matplotlib/seaborn styling and color helpers."""
+
 import colorsys
 import zlib
 
@@ -7,7 +9,7 @@ import matplotlib.font_manager
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import rc
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1 import make_axes_locatable  # noqa: F401
 
 
 def setup_mpl_everything(
@@ -15,6 +17,7 @@ def setup_mpl_everything(
     flag_font_fallback_to_default: bool = False,
     seaborn_default_palette: str = "Set2",
 ) -> None:
+    """Set matplotlib/seaborn rcParams (font, sizes, grid style, palette) for consistent plots."""
     # This should yield '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf'
     matplotlib.font_manager.findfont(
         font,
@@ -65,7 +68,7 @@ def hex_luminance(hex_color: str) -> float:
     assert hex_color.startswith("#") and len(hex_color) == 7, (
         "Input must be a hex color string like '#RRGGBB'"
     )
-    # Convert to RGB (0–1)
+    # Convert to RGB (0-1)
     rgb = mpl.colors.to_rgb(hex_color)
     # Relative luminance (Rec. 709)
     r, g, b = rgb
@@ -74,8 +77,9 @@ def hex_luminance(hex_color: str) -> float:
 
 
 def adjust_lightness(hex_color: str, lightness: float) -> str:
-    """Return ``hex_color`` with its HLS lightness replaced by ``lightness`` (0-1),
-    hue and saturation unchanged -- e.g. a lighter/darker variant of the same color for
+    """Return ``hex_color`` with its HLS lightness replaced by ``lightness`` (0-1).
+
+    Hue and saturation unchanged -- e.g. a lighter/darker variant of the same color for
     encoding a secondary variable (confidence, support level, ...) via shade while hue
     still encodes a categorical variable (gene, group, ...).
 
@@ -101,12 +105,13 @@ def adjust_lightness(hex_color: str, lightness: float) -> str:
 
 
 def stable_categorical_color(key: str, palette: list[str]) -> str:
-    """Deterministically map ``key`` to one color in ``palette``, stable across
-    processes and runs -- unlike Python's built-in ``hash()``, which is randomized
-    per-process for strings (``PYTHONHASHSEED``) and would give a different bucket
-    every run. Collisions across many keys against a small palette are expected and
-    fine for "visually distinguish most categories at a glance" use cases; use a
-    real categorical encoding (e.g. a legend) instead when every key must be unique.
+    """Deterministically map ``key`` to one color in ``palette``, stable across processes and runs.
+
+    Unlike Python's built-in ``hash()``, which is randomized per-process for strings
+    (``PYTHONHASHSEED``) and would give a different bucket every run. Collisions across
+    many keys against a small palette are expected and fine for "visually distinguish
+    most categories at a glance" use cases; use a real categorical encoding (e.g. a
+    legend) instead when every key must be unique.
 
     Args:
         key: The category to color, e.g. a gene name.
