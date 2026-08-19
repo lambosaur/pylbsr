@@ -75,6 +75,8 @@ class SliceConfig(BaseModel):
     def to_slice(self, L: int, anchor_position: int | None = None) -> slice:
         """Get the slice object for the given L (length of the sequence)."""
         if self.mode == SliceCoordinateSystem.ABSOLUTE:
+            # resolve_coordinates guarantees start/end are set (not None) in this mode.
+            assert self.start is not None and self.end is not None
             start = self.start
             end = self.end
 
