@@ -6,12 +6,14 @@ import glob
 import os
 import string
 from collections.abc import Iterator
+from types import TracebackType
 from typing import IO
 
 import numpy as np
 import pandas as pd
 import pyBigWig as pbw
 from pydantic import BaseModel, ConfigDict, Field, PositiveInt, field_validator, model_validator
+from typing_extensions import Self
 
 # ============================================================================
 # Wiggle Format
@@ -99,14 +101,17 @@ class WiggleBlock(BaseModel, abc.ABC):
         return self.intersect(other) is not None
 
     def __len__(self) -> int:
+        """Number of positions covered by the block, including gaps."""
         return self.stop - self.start + 1
 
     def __eq__(self, other: object) -> bool:
+        """Equal if same chrom and start (used for ordering, not full content equality)."""
         if not isinstance(other, WiggleBlock):
             return NotImplemented
         return (self.chrom, self.start) == (other.chrom, other.start)
 
     def __lt__(self, other: "WiggleBlock") -> bool:
+        """Order by chrom, then by start position."""
         if not isinstance(other, WiggleBlock):
             return NotImplemented
         if self.chrom != other.chrom:
@@ -114,6 +119,7 @@ class WiggleBlock(BaseModel, abc.ABC):
         return self.start < other.start
 
     def __hash__(self) -> int:
+        """Hash by chrom and start, consistent with `__eq__`."""
         return hash((self.chrom, self.start))
 
 
@@ -124,7 +130,8 @@ class FixedStepBlock(WiggleBlock):
     step: PositiveInt = 1
 
     @model_validator(mode="after")
-    def validate_step_span(self):
+    def validate_step_span(self) -> "FixedStepBlock":
+        """Reject a span wider than the step (would overlap the next value)."""
         if self.span > self.step:
             raise ValueError(f"Span {self.span} cannot be larger than step {self.step}")
         return self
@@ -132,20 +139,24 @@ class FixedStepBlock(WiggleBlock):
     @field_validator("values")
     @classmethod
     def check_non_empty(cls, v: tuple[int | float, ...]) -> tuple[int | float, ...]:
+        """Reject an empty values tuple."""
         if len(v) == 0:
             raise ValueError("values must contain at least one element.")
         return v
 
     @property
     def start(self) -> int:
+        """Start position of the block (1-based, inclusive)."""
         return self.start_
 
     @property
     def stop(self) -> int:
+        """Last position covered by the block (1-based, inclusive)."""
         return self.start + self.step * (len(self.values) - 1) + self.span - 1
 
     @property
     def indexed_values(self) -> tuple[tuple[int, int | float], ...]:
+        """Return (position, value) pairs for each covered position."""
         i = np.arange(len(self.values))
         j = np.arange(self.span)
         idx = self.start + i[:, None] * self.step + j[None, :]
@@ -155,10 +166,12 @@ class FixedStepBlock(WiggleBlock):
 
     @property
     def positions(self) -> tuple[int, ...]:
+        """Positions with values (not all positions in the range)."""
         return tuple(v[0] for v in self.indexed_values)
 
     @property
     def header(self) -> str:
+        """The declaration line for this block."""
         base = f"fixedStep chrom={self.chrom} start={self.start} step={self.step}"
         if self.span > 1:
             return f"{base} span={self.span}"
@@ -166,6 +179,7 @@ class FixedStepBlock(WiggleBlock):
 
     @property
     def data_lines(self) -> tuple[str, ...]:
+        """The data lines for this block."""
         return tuple(str(v) for v in self.values)
 
 
@@ -176,6 +190,7 @@ class VariableStepBlock(WiggleBlock):
 
     @model_validator(mode="after")
     def validate_positions(self) -> "VariableStepBlock":
+        """Reject mismatched lengths, non-increasing positions, or span-induced overlap."""
         if len(self.positions_) != len(self.values):
             raise ValueError("positions and values must have the same length.")
         if not all(
@@ -189,20 +204,24 @@ class VariableStepBlock(WiggleBlock):
 
     @property
     def start(self) -> int:
+        """Start position of the block (1-based, inclusive)."""
         return self.positions_[0]
 
     @property
     def stop(self) -> int:
+        """Last position covered by the block (1-based, inclusive)."""
         return self.positions_[-1] + self.span - 1
 
     @property
     def positions(self) -> tuple[int, ...]:
+        """Positions with values (not all positions in the range)."""
         return tuple(
             np.repeat(self.positions_, self.span) + np.tile(range(self.span), len(self.positions_))
         )
 
     @property
     def indexed_values(self) -> tuple[tuple[int, int | float], ...]:
+        """Return (position, value) pairs for each covered position."""
         pos = np.array(self.positions_)
         vals = np.array(self.values)
         idx = np.repeat(pos, self.span) + np.tile(range(self.span), len(vals))
@@ -210,6 +229,7 @@ class VariableStepBlock(WiggleBlock):
 
     @property
     def header(self) -> str:
+        """The declaration line for this block."""
         base = f"variableStep chrom={self.chrom}"
         if self.span > 1:
             return f"{base} span={self.span}"
@@ -217,6 +237,7 @@ class VariableStepBlock(WiggleBlock):
 
     @property
     def data_lines(self) -> tuple[str, ...]:
+        """The data lines for this block."""
         return tuple(f"{pos} {val}" for pos, val in zip(self.positions_, self.values))
 
 
@@ -234,6 +255,7 @@ class WigTrackDefinition(BaseModel):
 
     @model_validator(mode="after")
     def validate_type(self) -> "WigTrackDefinition":
+        """Reject any type other than "wiggle_0" (the only one this class formats)."""
         if self.type_ != "wiggle_0":
             raise ValueError(f"Invalid type: {self.type_}. Expected 'wiggle_0'.")
         return self
@@ -286,13 +308,21 @@ class WigBlockCollection(BaseModel):
             handle.write(block.to_wig())
         handle.write("\n")
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[WiggleBlock]:  # type: ignore[override]
+        """Iterate over blocks in sorted order.
+
+        Deliberately overrides pydantic BaseModel's default field-name/value iteration
+        to give collection-like semantics (``for block in collection``); relied on by
+        ``list(collection)`` in tests.
+        """
         return iter(self.blocks)
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Number of blocks in the collection."""
         return len(self.blocks)
 
     def __getitem__(self, index: int) -> WiggleBlock:
+        """Return the block at `index` (in sorted order)."""
         return self.blocks[index]
 
     def as_bed3(self) -> tuple[tuple[str, int, int], ...]:
@@ -414,7 +444,8 @@ class LazyLoaderBigWig:
         ufmt_filepath: str,
         expected_formatting_keyvalues: dict[str, list[str]],
         key_separator: str = "/",
-    ):
+    ) -> None:
+        """Validate `ufmt_filepath`/`expected_formatting_keyvalues` and defer loading bigwig files."""
         # Check that all expected keys are in the string to be formatted later.
         # Expected keys: {RBP_CT}, {STRAND_STR}
 
@@ -430,12 +461,13 @@ class LazyLoaderBigWig:
         # `expected_formatting_keyvalues` provides with the expected list of values for each key.
         if not all(key in expected_formatting_keyvalues for key in set(detected_keys)):
             raise KeyError(
-                f"Detected keys: {detected_keys} are not all associated to a "
-                f"list of values in the expected_formatting_keyvalues: {expected_formatting_keyvalues}"
+                f"Detected keys: {detected_keys} are not all associated to a list of values "
+                f"in the expected_formatting_keyvalues: {expected_formatting_keyvalues}"
             )
 
-        # The lazy-loader object can be queried as a dict with `lazyloader['key1{key_separator}key2...']`
-        # but we need to make sure that the key separator is not part of the key strings.
+        # The lazy-loader object can be queried as a dict with
+        # `lazyloader['key1{key_separator}key2...']` but we need to make sure that the key
+        # separator is not part of the key strings.
         for key, values in expected_formatting_keyvalues.items():
             if any(key_separator in value for value in values):
                 raise ValueError(
@@ -446,15 +478,17 @@ class LazyLoaderBigWig:
         self._expected_formatting_keyvalues = expected_formatting_keyvalues
         self._detected_keys = detected_keys
         self._ufmt_filepath = ufmt_filepath
-        self._bigwig = {}
+        self._bigwig: dict[str, pbw.pyBigWig] = {}
         self._expected_key_format: str = self._key_separator.join(
-            ("{" + v + "}" for v in self._detected_keys)
+            "{" + v + "}" for v in self._detected_keys
         )
 
     # NOTE: Old version supporting nested dict. Keeping for reference.
     # def __getitem__(self, query) -> Dict:
     #    if query not in self._expected_formatting_keyvalues[0]:
-    #        raise ValueError("Parent key should correspond to the first formatting field of the path.")
+    #        raise ValueError(
+    #            "Parent key should correspond to the first formatting field of the path."
+    #        )
 
     #    if query not in self._bigwig:
     #        # Load all the bigwig files for this RBP_CT
@@ -494,12 +528,14 @@ class LazyLoaderBigWig:
         """Return the expected formatting keyvalues for the lazy loader."""
         return self._expected_formatting_keyvalues
 
-    def close(self):
+    def close(self) -> None:
+        """Close all currently-loaded bigwig files."""
         # Close all the bigwig files
         for key in self._bigwig:
             self._bigwig[key].close()
 
     def __getitem__(self, query: str) -> pbw.pyBigWig:
+        """Load (if needed) and return the bigwig file for `query` (a joined-key string)."""
         key_values = query.split(self._key_separator)
         if not len(key_values) == len(self._detected_keys):
             raise ValueError(
@@ -537,13 +573,21 @@ class LazyLoaderBigWig:
 
         return self._bigwig[query]
 
-    def __del__(self):
+    def __del__(self) -> None:
+        """Close all currently-loaded bigwig files."""
         # Close all the bigwig files
         self.close()
         print("Closed all bigwig files.")
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
+        """Return self, for use as a context manager."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Close all currently-loaded bigwig files."""
         self.close()
