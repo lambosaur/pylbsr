@@ -74,10 +74,10 @@ def incorrect_motif_example(request):
 def _make_motif(fixture_cls) -> Motif:
     """Parse a Motif from a fixture class using its declared separators."""
     return parse_transfac_motif_lines(
-        lines=fixture_cls.lines_motif,
-        key_value_separator=fixture_cls.key_value_separator,
-        matrix_key_value_separator=fixture_cls.matrix_key_value_separator,
-        matrix_value_content_separator=fixture_cls.matrix_value_content_separator,
+        lines=fixture_cls.lines_motif(),
+        key_value_separator=fixture_cls.key_value_separator(),
+        matrix_key_value_separator=fixture_cls.matrix_key_value_separator(),
+        matrix_value_content_separator=fixture_cls.matrix_value_content_separator(),
     )
 
 
@@ -90,36 +90,36 @@ def test_parse_matrix_line(correct_motif_example):
     for matrix_line, expected in correct_motif_example.get_lines_matrix_for_test(N=3):
         parsed = _parse_transfac_matrix_line(
             line=matrix_line,
-            matrix_key_value_separator=correct_motif_example.matrix_key_value_separator,
-            matrix_value_content_separator=correct_motif_example.matrix_value_content_separator,
-            alphabet_size=len(correct_motif_example.alphabet),
+            matrix_key_value_separator=correct_motif_example.matrix_key_value_separator(),
+            matrix_value_content_separator=correct_motif_example.matrix_value_content_separator(),
+            alphabet_size=len(correct_motif_example.alphabet()),
         )
         assert parsed.values == expected.values
 
 
 def test_parse_matrix_lines(correct_motif_example):
     result = _parse_transfac_matrix_lines(
-        lines=correct_motif_example.lines_matrix,
-        matrix_key_value_separator=correct_motif_example.matrix_key_value_separator,
-        matrix_value_content_separator=correct_motif_example.matrix_value_content_separator,
+        lines=correct_motif_example.lines_matrix(),
+        matrix_key_value_separator=correct_motif_example.matrix_key_value_separator(),
+        matrix_value_content_separator=correct_motif_example.matrix_value_content_separator(),
     )
     assert result  # non-empty list returned
 
 
 def test_group_transfac_motif_lines(correct_motif_example):
-    assert _group_transfac_motif_lines(lines=correct_motif_example.lines_motif) == (
-        correct_motif_example.lines_header,
-        correct_motif_example.lines_matrix,
-        correct_motif_example.lines_footer,
+    assert _group_transfac_motif_lines(lines=correct_motif_example.lines_motif()) == (
+        correct_motif_example.lines_header(),
+        correct_motif_example.lines_matrix(),
+        correct_motif_example.lines_footer(),
     )
 
 
 def test_fail_parse_matrix_lines(incorrect_motif_example):
     with pytest.raises(ValueError):
         _parse_transfac_matrix_lines(
-            lines=incorrect_motif_example.lines_matrix,
-            matrix_key_value_separator=incorrect_motif_example.matrix_key_value_separator,
-            matrix_value_content_separator=incorrect_motif_example.matrix_value_content_separator,
+            lines=incorrect_motif_example.lines_matrix(),
+            matrix_key_value_separator=incorrect_motif_example.matrix_key_value_separator(),
+            matrix_value_content_separator=incorrect_motif_example.matrix_value_content_separator(),
         )
 
 
@@ -188,10 +188,10 @@ def test_write_matrix(correct_motif_example):
     _write_matrix_transfac(
         handle=handle,
         matrix=correct_motif_example.get_matrix_as_dataframe(),
-        consensus=correct_motif_example.consensus,
+        consensus=correct_motif_example.consensus(),
         format_matrix_values="{value}",
-        matrix_key_value_separator=correct_motif_example.matrix_key_value_separator,
-        matrix_value_content_separator=correct_motif_example.matrix_value_content_separator,
+        matrix_key_value_separator=correct_motif_example.matrix_key_value_separator(),
+        matrix_value_content_separator=correct_motif_example.matrix_value_content_separator(),
     )
     handle.seek(0)
     assert handle.read()
@@ -202,13 +202,13 @@ def test_write_matrix_content(correct_motif_writable_example):
     _write_matrix_transfac(
         handle=handle,
         matrix=correct_motif_writable_example.get_matrix_as_dataframe(),
-        consensus=correct_motif_writable_example.consensus,
+        consensus=correct_motif_writable_example.consensus(),
         format_matrix_values="{value}",
-        matrix_key_value_separator=correct_motif_writable_example.matrix_key_value_separator,
-        matrix_value_content_separator=correct_motif_writable_example.matrix_value_content_separator,
+        matrix_key_value_separator=correct_motif_writable_example.matrix_key_value_separator(),
+        matrix_value_content_separator=correct_motif_writable_example.matrix_value_content_separator(),
     )
     handle.seek(0)
-    assert handle.readlines() == correct_motif_writable_example.lines_matrix
+    assert handle.readlines() == correct_motif_writable_example.lines_matrix()
 
 
 def test_write_matrix_stringifies_column_labels():
@@ -301,10 +301,10 @@ def test_relabel_motif_collection_cc_records_original():
 def _make_motif_with_ac() -> Motif:
     """Return a parsed JasparTransfacMotif (has an AC field)."""
     return parse_transfac_motif_lines(
-        lines=JasparTransfacMotif.lines_motif,
-        key_value_separator=JasparTransfacMotif.key_value_separator,
-        matrix_key_value_separator=JasparTransfacMotif.matrix_key_value_separator,
-        matrix_value_content_separator=JasparTransfacMotif.matrix_value_content_separator,
+        lines=JasparTransfacMotif.lines_motif(),
+        key_value_separator=JasparTransfacMotif.key_value_separator(),
+        matrix_key_value_separator=JasparTransfacMotif.matrix_key_value_separator(),
+        matrix_value_content_separator=JasparTransfacMotif.matrix_value_content_separator(),
     )
 
 
@@ -366,6 +366,7 @@ def test_motif_to_biopython_motif_wrong_alphabet():
 def test_to_logomaker_df():
     motif = _make_motif(GenericMinimalTransfacMotif)
     df = motif.to_logomaker_df()
+    assert isinstance(df.index, pd.RangeIndex)
     assert df.index.name == "pos"
     assert list(df.index) == list(range(len(motif.matrix)))
     assert list(df.columns) == list(motif.matrix.columns)
