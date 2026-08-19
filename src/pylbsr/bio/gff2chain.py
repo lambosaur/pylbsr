@@ -178,7 +178,8 @@ class MappingTable:
         t_size = int(df["tEnd"].max())
 
         # For genomic query with reversal: adjust q_size to make reverse-to-forward conversion a no-op
-        if need_reverse and query == "a":  # Query is genomic 'a'
+        # Query is genomic 'a'.
+        if need_reverse and query == "a":  # noqa: SIM108 -- comments below explain each branch
             # After RC, query coords are [0, q_size_for_rc)
             # When liftOver sees qStrand="-", it will do: qForward = q_size - qReverse
             # We want qForward to equal the ORIGINAL coords (before RC)
@@ -250,7 +251,9 @@ def _per_entity_processing_to_nool_bed6(
     # Subset on type
     subset_type_ = subset_type if isinstance(subset_type, list) else [subset_type]
 
-    assert gff["type"].isin(subset_type_).any(), f"GFF must have annotations of type(s) {subset_type_}!"
+    assert gff["type"].isin(subset_type_).any(), (
+        f"GFF must have annotations of type(s) {subset_type_}!"
+    )
 
 
     gff = gff.loc[lambda df: df["type"].isin(subset_type_)]
@@ -344,8 +347,8 @@ def _assign_entity_query_coords(bed: pd.DataFrame) -> pd.DataFrame:
     bed["q_end"] = bed["q_start"] + bed["block_len"]
 
     # Finally, create a mapping table with columns:
-    # "a.chrom", "a.start", "a.end", "a.strand", "b.chrom", "b.start", "b.end", "b.strand", "block_len"
-    # Here by default b.strand is "+".
+    # "a.chrom", "a.start", "a.end", "a.strand", "b.chrom", "b.start", "b.end",
+    # "b.strand", "block_len". Here by default b.strand is "+".
     mapping_table = bed.copy()
     mapping_table = mapping_table.rename(
         columns={
@@ -419,7 +422,9 @@ def gff_to_chains(
 
     subset_type_ = subset_type if isinstance(subset_type, list) else [subset_type]
 
-    assert gff["type"].isin(subset_type_).any(), f"GFF must have annotations of type(s) {subset_type_}!"
+    assert gff["type"].isin(subset_type_).any(), (
+        f"GFF must have annotations of type(s) {subset_type_}!"
+    )
     assert target in {"seqid", "entity_id"} and query in {"seqid", "entity_id"} and target != query, (
         "target and query must be 'seqid' and 'entity_id', and different from each other."
     )
