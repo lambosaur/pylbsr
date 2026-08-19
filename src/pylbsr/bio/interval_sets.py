@@ -54,7 +54,7 @@ def build_membership(
 
     Args:
         named_bedtools: Mapping of set name to BedTool. Key order is preserved.
-        frac: Minimum reciprocal overlap fraction (0–1). Both the query region and
+        frac: Minimum reciprocal overlap fraction (0-1). Both the query region and
             the matching subject region must be covered by at least this fraction.
         stranded: If ``True``, only same-strand overlaps are counted (bedtools
             ``-s`` flag). All BedTools must have at least 6 columns (BED6) with a
@@ -133,7 +133,7 @@ def pairwise_intersect_counts(
     Args:
         named_bedtools: Mapping of set name to BedTool. Key order determines
             the row/column order of the returned matrix.
-        frac: Minimum reciprocal overlap fraction (0–1).
+        frac: Minimum reciprocal overlap fraction (0-1).
         stranded: If ``True``, only same-strand overlaps are counted (bedtools
             ``-s`` flag). All BedTools must have at least 6 columns (BED6).
 
@@ -207,7 +207,7 @@ class BedSetComparison:
     - **Non-redundant catalog** (``plot_upset(anchor=None)``): each region is
       attributed to the highest-priority set (first key in ``named_bedtools``) that
       claims it; lower-priority sets contribute only their novel regions.  All
-      2ᴺ−1 combination bins are visible and each region appears exactly once.
+      2ᴺ-1 combination bins are visible and each region appears exactly once.
 
     All expensive bedtools intersections are deferred until first property access and
     cached.
@@ -241,7 +241,7 @@ class BedSetComparison:
         Args:
             named_bedtools: Mapping of set name to BedTool. Key insertion order is
                 preserved and used as the row/column order in matrices and plots.
-            frac: Minimum reciprocal overlap fraction (0–1). An overlap counts only
+            frac: Minimum reciprocal overlap fraction (0-1). An overlap counts only
                 when the intersecting segment covers at least this fraction of both
                 the query region (bedtools ``-f``) and the subject region (``-F``).
             stranded: If ``True``, only same-strand overlaps are counted (bedtools
@@ -358,7 +358,7 @@ class BedSetComparison:
         anchor: str | None = None,
         label: str = "",
         figsize: tuple[float, float] = (14, 6),
-        **upset_kwargs: Any,
+        **upset_kwargs: Any,  # noqa: ANN401 -- forwarded as-is to upsetplot.UpSet
     ) -> tuple[plt.Figure, dict]:  # type: ignore[type-arg]
         """Plot an UpSet diagram of set membership across all named sets.
 
@@ -442,7 +442,7 @@ class BedSetComparison:
         totals_ax.set_xlabel("Set size\n(# regions)")
 
         strand_note = ", stranded" if self.stranded else ""
-        title_type = f" – {label}" if label else ""
+        title_type = f" - {label}" if label else ""
         if anchor is None:
             anchor_note = "complete"
             subtitle = "all regions attributed to highest-priority set (key order)"
@@ -462,7 +462,7 @@ class BedSetComparison:
         label: str = "",
         highlight_top_right: bool = False,
         figsize: tuple[float, float] = (6, 6),
-        **heatmap_kwargs: Any,
+        **heatmap_kwargs: Any,  # noqa: ANN401 -- forwarded as-is to seaborn.heatmap
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot a pairwise intersection fraction heatmap.
 
@@ -526,7 +526,7 @@ class BedSetComparison:
                     )
 
         strand_note = ", stranded" if self.stranded else ""
-        title_type = f" – {label}" if label else ""
+        title_type = f" - {label}" if label else ""
         ax.set_title(
             f"Pairwise intersection fractions{title_type}"
             f" (≥{self.frac:.0%} reciprocal{strand_note})\n"
