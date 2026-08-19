@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
-from typing import Literal
+from typing import Literal, cast
 
 import pandas as pd
 import pandera.pandas as pa
@@ -56,23 +56,21 @@ class Bed6IntervalsModel(pa.DataFrameModel):
     @pa.check("start")
     def check_start_greater_than_zero(
         cls, series: pa.typing.Series[pa.typing.Int64]
-    ) -> pa.typing.Series[pa.typing.Int64]:
-        """Keep only rows where `start` is strictly positive."""
-        return series[series > 0]
+    ) -> pa.typing.Series[bool]:
+        """`start` must be strictly positive."""
+        return cast(pa.typing.Series[bool], series > 0)
 
     @pa.check("end")
     def check_end_greater_than_zero(
         cls, series: pa.typing.Series[pa.typing.Int64]
-    ) -> pa.typing.Series[pa.typing.Int64]:
-        """Keep only rows where `end` is strictly positive."""
-        return series[series > 0]
+    ) -> pa.typing.Series[bool]:
+        """`end` must be strictly positive."""
+        return cast(pa.typing.Series[bool], series > 0)
 
-    @pa.check("end")
-    def check_end_greater_than_start(
-        cls, series: pa.typing.Series[pa.typing.Int64]
-    ) -> pa.typing.Series[pa.typing.Int64]:
-        """Keep only rows where `end` is strictly greater than `start`."""
-        return series[series > series["start"]]
+    @pa.dataframe_check()
+    def check_end_greater_than_start(cls, df: pd.DataFrame) -> pa.typing.Series[bool]:
+        """`end` must be strictly greater than `start`."""
+        return cast(pa.typing.Series[bool], df["end"] > df["start"])
 
 
 @dataclass
@@ -100,5 +98,5 @@ def identifiers_to_bed6_dataframe(
     df["name"] = identifiers
     df = df.reset_index().rename(columns={"index": "score"})
 
-    return df.loc[:, bed6_cols]
+    return cast(DataFrame[Bed6IntervalsModel], df.loc[:, bed6_cols])
 
