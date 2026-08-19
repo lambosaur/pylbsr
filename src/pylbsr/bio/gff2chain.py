@@ -151,7 +151,7 @@ class MappingTable:
         ).copy()
 
         # Strands must be constant per entity
-        t_strand = df["tStrand"].iloc[0]
+        entity_strand = df["tStrand"].iloc[0]
         q_strand_orig = df["qStrand"].iloc[0]
         assert df["tStrand"].nunique() == 1, "query strand must be constant!"
         assert df["qStrand"].nunique() == 1, "Query strand must be constant!"
@@ -160,7 +160,7 @@ class MappingTable:
         df = df.sort_values("tStart", ascending=True).reset_index(drop=True)
 
         # Determine if we need to reverse the mapping
-        need_reverse = t_strand != q_strand_orig
+        need_reverse = entity_strand != q_strand_orig
 
         # Compute query size (needed for RC transformation)
         q_size_for_rc = int(df["qEnd"].max())
@@ -200,7 +200,10 @@ class MappingTable:
         chain = ChainRecord(
             t_chrom=df["tChrom"].iloc[0],
             t_size=t_size,
-            t_strand=t_strand,
+            # Target coordinates are always forward-genomic per UCSC chain convention -- only the
+            # query side is ever reverse-complemented (see need_reverse above). The entity's own
+            # strand is not the coordinate system's orientation.
+            t_strand="+",
             t_start=t_start,
             t_end=t_end,
             q_chrom=df["qChrom"].iloc[0],
