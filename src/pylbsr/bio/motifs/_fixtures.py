@@ -8,46 +8,53 @@ import pandas as pd
 
 
 class TransfacMotifExample(ABC):
+    @property
     @classmethod
     @abstractmethod
     def lines_header(cls) -> list[str]: ...
 
+    @property
     @classmethod
     @abstractmethod
     def lines_matrix(cls) -> list[str]: ...
 
+    @property
     @classmethod
     @abstractmethod
     def lines_footer(cls) -> list[str]: ...
 
+    @property
     @classmethod
     @abstractmethod
     def key_value_separator(cls) -> str: ...
 
+    @property
     @classmethod
     @abstractmethod
     def matrix_value_content_separator(cls) -> str: ...
 
+    @property
     @classmethod
     @abstractmethod
     def matrix_key_value_separator(cls) -> str: ...
 
+    @property
     @classmethod
     @abstractmethod
     def consensus(cls) -> str | None: ...
 
-    @classmethod
     @property
+    @classmethod
     def lines_motif(cls) -> list[str]:
         return cls.lines_header + cls.lines_matrix + cls.lines_footer
 
-    @classmethod
     @property
+    @classmethod
     def matrix_size(cls) -> int:
         return len(cls.lines_matrix) - 1  # -1 for the header
 
-    @classmethod
     @property
+    @classmethod
     def alphabet(cls) -> tuple[str, ...]:
         header_matrix_cols = (
             cls.lines_matrix[0]
@@ -99,8 +106,8 @@ class TransfacMotifExample(ABC):
         df.index = [parsed.key for parsed in data[1:]]
         return df
 
-    @classmethod
     @property
+    @classmethod
     def matrix(cls) -> pd.DataFrame:
         return cls.get_matrix_as_dataframe()
 
@@ -112,8 +119,8 @@ class TransfacMotifExample(ABC):
 class MCrossTransfacMotif(TransfacMotifExample):
     # From HepG2.AGGF1.top10.cluster.m1.00.mat
 
-    @classmethod
     @property
+    @classmethod
     def lines_header(cls) -> list[str]:
         return [
             "AC\tHepG2.AGGF1.0\n",
@@ -127,8 +134,8 @@ class MCrossTransfacMotif(TransfacMotifExample):
             "DE\tN=555, Consensus=NNGAAGAAANN,NNGAAGATANN, Score=146.374017578534\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def lines_matrix(cls) -> list[str]:
         return [
             "P0\tA\tC\tG\tT\n",
@@ -145,8 +152,8 @@ class MCrossTransfacMotif(TransfacMotifExample):
             "11\t145\t69\t150\t191\tN\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def lines_footer(cls) -> list[str]:
         return [
             "XX\n",
@@ -168,30 +175,30 @@ class MCrossTransfacMotif(TransfacMotifExample):
             "//\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def key_value_separator(cls) -> str:
         return "\t"
 
-    @classmethod
     @property
+    @classmethod
     def matrix_key_value_separator(cls) -> str:
         return "\t"
 
-    @classmethod
     @property
+    @classmethod
     def matrix_value_content_separator(cls) -> str:
         return "\t"
 
-    @classmethod
     @property
+    @classmethod
     def consensus(cls) -> str:
         return "NNGAAGAAANN"
 
 
 class RsatTransfacMotif(TransfacMotifExample):
-    @classmethod
     @property
+    @classmethod
     def lines_header(cls) -> list[str]:
         return [
             "AC  assembly_1\n",
@@ -201,8 +208,8 @@ class RsatTransfacMotif(TransfacMotifExample):
             "DE  wdkTCACGTGAmhw\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def lines_matrix(cls) -> list[str]:
         return [
             "P0           a         c         g         t\n",
@@ -222,8 +229,8 @@ class RsatTransfacMotif(TransfacMotifExample):
             "14           7         4         2        13\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def lines_footer(cls) -> list[str]:
         return [
             "XX\n",
@@ -241,40 +248,40 @@ class RsatTransfacMotif(TransfacMotifExample):
             "//\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def key_value_separator(cls) -> str:
         return "  "
 
     # NOTE: poor formatting from RSAT output — the parser filters empty fields to handle this.
 
-    @classmethod
     @property
+    @classmethod
     def matrix_key_value_separator(cls) -> str:
         return " "
 
-    @classmethod
     @property
+    @classmethod
     def matrix_value_content_separator(cls) -> str:
         return " "
 
-    @classmethod
     @property
+    @classmethod
     def consensus(cls) -> None:
         return None
 
 
 class GenericMinimalTransfacMotif(TransfacMotifExample):
-    @classmethod
     @property
+    @classmethod
     def lines_header(cls) -> list[str]:
         return [
             "ID  generic_minimal_motif\n",
             "XX\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def lines_matrix(cls) -> list[str]:
         return [
             "P0  A C G T\n",
@@ -287,38 +294,38 @@ class GenericMinimalTransfacMotif(TransfacMotifExample):
             "07  1.0 0.0 0.0 0.0\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def lines_footer(cls) -> list[str]:
         return [
             "XX\n",
             "//\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def key_value_separator(cls) -> str:
         return "  "
 
-    @classmethod
     @property
+    @classmethod
     def matrix_key_value_separator(cls) -> str:
         return "  "
 
-    @classmethod
     @property
+    @classmethod
     def matrix_value_content_separator(cls) -> str:
         return " "
 
-    @classmethod
     @property
+    @classmethod
     def consensus(cls) -> None:
         return None
 
 
 class JasparTransfacMotif(TransfacMotifExample):
-    @classmethod
     @property
+    @classmethod
     def lines_header(cls) -> list[str]:
         return [
             "AC MA0004.1\n",
@@ -328,8 +335,8 @@ class JasparTransfacMotif(TransfacMotifExample):
             "DE MA0004.1 Arnt ; From JASPAR\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def lines_matrix(cls) -> list[str]:
         return [
             "PO	A	C	G	T\n",
@@ -341,8 +348,8 @@ class JasparTransfacMotif(TransfacMotifExample):
             "06	0.0	0.0	20.0	0.0\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def lines_footer(cls) -> list[str]:
         return [
             "XX\n",
@@ -356,23 +363,23 @@ class JasparTransfacMotif(TransfacMotifExample):
             "//\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def key_value_separator(cls) -> str:
         return " "
 
-    @classmethod
     @property
+    @classmethod
     def matrix_key_value_separator(cls) -> str:
         return "\t"
 
-    @classmethod
     @property
+    @classmethod
     def matrix_value_content_separator(cls) -> str:
         return "\t"
 
-    @classmethod
     @property
+    @classmethod
     def consensus(cls) -> None:
         return None
 
@@ -385,8 +392,8 @@ class MalformedTransfacMotif(TransfacMotifExample):
     # Found in file K562.SERBP1.top10.cluster.m1.06.mat
     # Matrix file stops right after the P0 header line — XX and // are missing.
 
-    @classmethod
     @property
+    @classmethod
     def lines_header(cls) -> list[str]:
         return [
             "AC\tK562.SERBP1.7\n",
@@ -400,69 +407,69 @@ class MalformedTransfacMotif(TransfacMotifExample):
             "DE\tN=0, Consensus=NNGCATATCNN, Score=0\n",
         ]
 
-    @classmethod
     @property
+    @classmethod
     def lines_matrix(cls) -> list[str]:
         return ["P0\tA\tC\tG\tT\n"]
 
-    @classmethod
     @property
+    @classmethod
     def lines_footer(cls) -> list[str]:
         return []
 
-    @classmethod
     @property
+    @classmethod
     def key_value_separator(cls) -> str:
         return "\t"
 
-    @classmethod
     @property
+    @classmethod
     def matrix_key_value_separator(cls) -> str:
         return "\t"
 
-    @classmethod
     @property
+    @classmethod
     def matrix_value_content_separator(cls) -> str:
         return "\t"
 
-    @classmethod
     @property
+    @classmethod
     def consensus(cls) -> None:
         return None
 
 
 class EmptyTransfacMotif(TransfacMotifExample):
-    @classmethod
     @property
+    @classmethod
     def lines_header(cls) -> list[str]:
         return []
 
-    @classmethod
     @property
+    @classmethod
     def lines_matrix(cls) -> list[str]:
         return []
 
-    @classmethod
     @property
+    @classmethod
     def lines_footer(cls) -> list[str]:
         return []
 
-    @classmethod
     @property
+    @classmethod
     def key_value_separator(cls) -> str:
         return ""
 
-    @classmethod
     @property
+    @classmethod
     def matrix_key_value_separator(cls) -> str:
         return ""
 
-    @classmethod
     @property
+    @classmethod
     def matrix_value_content_separator(cls) -> str:
         return ""
 
-    @classmethod
     @property
+    @classmethod
     def consensus(cls) -> None:
         return None
