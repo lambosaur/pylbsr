@@ -1,3 +1,5 @@
+"""Jupyter-notebook helpers: locating the project root and per-cell timing."""
+
 import os
 import time
 from pathlib import Path
@@ -74,12 +76,14 @@ def assert_notebook_working_dir(expected_local_file: os.PathLike) -> Path:
 
 
     Args:
-        expected_local_file (os.PathLike): The expected local file to check for in the current working directory.
-            This can be the name of the notebook file.
+        expected_local_file (os.PathLike): The expected local file to check for in the
+            current working directory. This can be the name of the notebook file.
 
     Raises:
-        KeyError: if the `__vsc_ipynb_file__` variable is not found in the global scope, while the first CWD check failed.
-        FileNotFoundError: if the expected local file is not found in the current working directory after attempting to change it.
+        KeyError: if the `__vsc_ipynb_file__` variable is not found in the global
+            scope, while the first CWD check failed.
+        FileNotFoundError: if the expected local file is not found in the current
+            working directory after attempting to change it.
     """
     import os
     from pathlib import Path
@@ -114,7 +118,8 @@ def assert_notebook_working_dir(expected_local_file: os.PathLike) -> Path:
             expected_local_filepath = cwd / expected_local_file
             if not expected_local_filepath.exists():
                 raise FileNotFoundError(
-                    f"Updated (using __vsc_ipynb_file__) CWD: {cwd} ; CWD does not contain expected file."
+                    f"Updated (using __vsc_ipynb_file__) CWD: {cwd} ; "
+                    "CWD does not contain expected file."
                 )
 
             return cwd
@@ -144,9 +149,9 @@ _t_start = 0.0
 _registered = False
 
 
-def enable_cell_timing_print():
+def enable_cell_timing_print() -> None:
     """Enable timing of Jupyter notebook cells, **printed** in the cell's output."""
-    global _registered, _t_start
+    global _registered
 
     if _registered:
         return  # avoid duplicate registrations
@@ -155,11 +160,11 @@ def enable_cell_timing_print():
     if ip is None:
         return  # not in a notebook
 
-    def pre_run_cell(info):
+    def pre_run_cell(info: object) -> None:
         global _t_start
         _t_start = time.time()
 
-    def post_run_cell(result):
+    def post_run_cell(result: object) -> None:
         global _t_start
         if _t_start:
             dt = time.time() - _t_start
@@ -176,14 +181,14 @@ _registered_metadata = False
 
 
 
-def enable_cell_timing_metadata(show: bool = False):
+def enable_cell_timing_metadata(show: bool = False) -> None:
     """Record per-cell run time into cell metadata.
 
     Args:
         show : bool
             If True, also prints a small line (⏱ X.XX s) in cell output.
     """
-    global _registered_metadata, _t_start
+    global _registered_metadata
 
     if _registered_metadata:
         return
@@ -194,11 +199,11 @@ def enable_cell_timing_metadata(show: bool = False):
 
     metadata_key = "execution_time_s"
 
-    def pre_run_cell(info):
+    def pre_run_cell(info: object) -> None:
         global _t_start
         _t_start = time.time()
 
-    def post_run_cell(result):
+    def post_run_cell(result: object) -> None:
         global _t_start
 
         if not _t_start:
@@ -216,8 +221,7 @@ def enable_cell_timing_metadata(show: bool = False):
             # Use namespaced_variable to register metadata.
             cell_obj.setdefault("metadata", {})
             cell_obj["metadata"][metadata_key] = round(dt, 3)
-        except Exception:
-            # fallback: silently ignore if structure unavailable
+        except Exception:  # noqa: S110, BLE001 -- deliberate fallback if structure unavailable
             pass
 
         if show:
