@@ -65,10 +65,15 @@ jobs:
         run: tox -e py
 
   lint-and-typecheck:
-    # Kept independent of the pip-install-and-test job's build toolchain: ruff/mypy don't
-    # need pybedtools compiled, just installed directly, so this stays fast.
+    # ruff (check + format) is pure syntax, no runtime deps needed. mypy is different: it
+    # needs the actual dependency graph installed to resolve third-party return types
+    # accurately (e.g. matplotlib.colors.to_hex() -> str) -- without it, every third-party
+    # call resolves to Any and no-any-return fires on functions that declare a concrete
+    # return type, even though the code is correctly typed against what's really installed.
+    # So this job pays the same build cost as pip-install-and-test rather than staying
+    # "independent" of it.
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -76,8 +81,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install lint/type-check tools
-        run: pip install "ruff>=0.11,<1.0" "mypy>=1.11,<2.0"
+      - name: Install system prerequisites
+        run: |
+          timeout 8m sudo apt-get update
+          timeout 8m sudo apt-get install -y --no-install-recommends build-essential zlib1g-dev bedtools
+
+      - name: pip install
+        run: pip install ".[dev]"
 
       - name: ruff check
         run: ruff check .
