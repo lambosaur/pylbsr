@@ -463,4 +463,3 @@ class ListPRCresults:
         plt.tight_layout()
 
         return (fig, ax)
-

@@ -24,6 +24,7 @@ from pylbsr.bio.gff2chain import (
 @pytest.fixture
 def gff_forward_strand() -> pd.DataFrame:
     """GFF table for forward strand transcript ENST00000402432.4."""
+    # fmt: off
     data = [
         {"score":0, "seqid": "chr5", "type": "transcript", "start": 160229506, "end": 160238716, "strand": "+", "transcript_id": "ENST00000402432.4"},
         {"score":0, "seqid": "chr5", "type": "exon", "start": 160229506, "end": 160229624, "strand": "+", "transcript_id": "ENST00000402432.4"},
@@ -39,12 +40,14 @@ def gff_forward_strand() -> pd.DataFrame:
         {"score":0, "seqid": "chr5", "type": "five_prime_UTR", "start": 160229506, "end": 160229557, "strand": "+", "transcript_id": "ENST00000402432.4"},
         {"score":0, "seqid": "chr5", "type": "three_prime_UTR", "start": 160238660, "end": 160238716, "strand": "+", "transcript_id": "ENST00000402432.4"},
     ]
+    # fmt: on
     return pd.DataFrame(data)
 
 
 @pytest.fixture
 def expected_mapping_table_forward_transcript() -> pd.DataFrame:
     """Expected mapping table for forward strand transcript (after extracting 'transcript' type)."""
+    # fmt: off
     data = [
         {
             "a.chrom": "chr5",
@@ -58,6 +61,7 @@ def expected_mapping_table_forward_transcript() -> pd.DataFrame:
             "block_len": 9211,
         }
     ]
+    # fmt: on
     return pd.DataFrame(data)
 
 
@@ -65,6 +69,7 @@ def expected_mapping_table_forward_transcript() -> pd.DataFrame:
 def expected_mapping_table_forward_exons() -> pd.DataFrame:
     """Expected mapping table for forward strand exons (after extracting 'exon' type and merging)."""
     # After merging overlapping exons, we expect 4 blocks
+    # fmt: off
     data = [
         {
             "a.chrom": "chr5",
@@ -111,6 +116,7 @@ def expected_mapping_table_forward_exons() -> pd.DataFrame:
             "block_len": 111,
         },
     ]
+    # fmt: on
     return pd.DataFrame(data)
 
 
@@ -162,6 +168,7 @@ def expected_chain_forward_transcript_b_to_a() -> dict[str, Any]:
 @pytest.fixture
 def gff_reverse_strand() -> pd.DataFrame:
     """GFF table for reverse strand transcript ENST00000447513.7."""
+    # fmt: off
     data = [
         {"score": 0, "seqid": "chr1", "type": "transcript", "start": 2403974, "end": 2412564, "strand": "-", "transcript_id": "ENST00000447513.7"},
         {"score": 0, "seqid": "chr1", "type": "exon", "start": 2403974, "end": 2405834, "strand": "-", "transcript_id": "ENST00000447513.7"},
@@ -181,12 +188,14 @@ def gff_reverse_strand() -> pd.DataFrame:
         {"score": 0, "seqid": "chr1", "type": "start_codon", "start": 2412500, "end": 2412502, "strand": "-", "transcript_id": "ENST00000447513.7"},
         {"score": 0, "seqid": "chr1", "type": "five_prime_UTR", "start": 2412503, "end": 2412564, "strand": "-", "transcript_id": "ENST00000447513.7"},
     ]
+    # fmt: on
     return pd.DataFrame(data)
 
 
 @pytest.fixture
 def expected_mapping_table_reverse_exons() -> pd.DataFrame:
     """Expected mapping table for reverse strand exons (after extracting 'exon' type)."""
+    # fmt: off
     data = [
         {"a.chrom": "chr1", "a.start": 2403973, "a.end": 2405834, "a.strand": "-", "b.chrom": "ENST00000447513.7", "b.start": 974, "b.end": 2835, "b.strand": "+", "block_len": 1861},
         {"a.chrom": "chr1", "a.start": 2406483, "a.end": 2406619, "a.strand": "-", "b.chrom": "ENST00000447513.7", "b.start": 838, "b.end": 974, "b.strand": "+", "block_len": 136},
@@ -195,6 +204,7 @@ def expected_mapping_table_reverse_exons() -> pd.DataFrame:
         {"a.chrom": "chr1", "a.start": 2410370, "a.end": 2410451, "a.strand": "-", "b.chrom": "ENST00000447513.7", "b.start": 174, "b.end": 255, "b.strand": "+", "block_len": 81},
         {"a.chrom": "chr1", "a.start": 2412390, "a.end": 2412564, "a.strand": "-", "b.chrom": "ENST00000447513.7", "b.start": 0, "b.end": 174, "b.strand": "+", "block_len": 174},
     ]
+    # fmt: on
     return pd.DataFrame(data)
 
 
@@ -380,7 +390,7 @@ def test_mapping_table_forward_transcript_a_to_b(
 
 def test_mapping_table_forward_transcript_b_to_a(
     expected_mapping_table_forward_transcript: pd.DataFrame,
-    expected_chain_forward_transcript_b_to_a: dict[str, Any]
+    expected_chain_forward_transcript_b_to_a: dict[str, Any],
 ) -> None:
     """Test MappingTable.to_chain() for forward strand transcript: transcript → genomic."""
     mapping = MappingTable(expected_mapping_table_forward_transcript)
@@ -409,7 +419,7 @@ def test_mapping_table_forward_transcript_b_to_a(
 
 def test_mapping_table_reverse_exons_a_to_b(
     expected_mapping_table_reverse_exons: pd.DataFrame,
-    expected_chain_reverse_exons_a_to_b: dict[str, Any]
+    expected_chain_reverse_exons_a_to_b: dict[str, Any],
 ) -> None:
     """Test MappingTable.to_chain() for reverse strand exons: genomic → transcript."""
     mapping = MappingTable(expected_mapping_table_reverse_exons)
@@ -432,7 +442,7 @@ def test_mapping_table_reverse_exons_a_to_b(
 
 
 def test_mapping_table_reverse_exons_blocks_dt_dq(
-    expected_mapping_table_reverse_exons: pd.DataFrame
+    expected_mapping_table_reverse_exons: pd.DataFrame,
 ) -> None:
     """Test that reverse strand produces correct dt and dq values in blocks."""
     mapping = MappingTable(expected_mapping_table_reverse_exons)
@@ -463,9 +473,7 @@ def test_mapping_table_reverse_exons_blocks_dt_dq(
 # ============================================================================
 
 
-def test_per_entity_processing_to_nool_bed6_forward_exons(
-    gff_forward_strand: pd.DataFrame
-) -> None:
+def test_per_entity_processing_to_nool_bed6_forward_exons(gff_forward_strand: pd.DataFrame) -> None:
     """Test _per_entity_processing_to_nool_bed6 for forward strand exons."""
     result = _per_entity_processing_to_nool_bed6(
         gff=gff_forward_strand,
@@ -672,9 +680,18 @@ def test_chain_record_header_as_dict() -> None:
 
 def test_gff_to_chains_empty_subset() -> None:
     """Test gff_to_chains with subset_type that doesn't exist."""
-    gff = pd.DataFrame([
-        {"seqid": "chr1", "type": "exon", "start": 100, "end": 200, "strand": "+", "transcript_id": "T1"},
-    ])
+    gff = pd.DataFrame(
+        [
+            {
+                "seqid": "chr1",
+                "type": "exon",
+                "start": 100,
+                "end": 200,
+                "strand": "+",
+                "transcript_id": "T1",
+            },
+        ]
+    )
 
     with pytest.raises(AssertionError, match="must have annotations of type"):
         list(gff_to_chains(gff, "transcript_id", "CDS", "seqid", "entity_id"))
@@ -682,10 +699,21 @@ def test_gff_to_chains_empty_subset() -> None:
 
 def test_mapping_table_invalid_target_query() -> None:
     """Test MappingTable.to_chain() with invalid target/query values."""
-    data = pd.DataFrame([
-        {"a.chrom": "chr1", "a.start": 0, "a.end": 100, "a.strand": "+",
-            "b.chrom": "T1", "b.start": 0, "b.end": 100, "b.strand": "+", "block_len": 100}
-    ])
+    data = pd.DataFrame(
+        [
+            {
+                "a.chrom": "chr1",
+                "a.start": 0,
+                "a.end": 100,
+                "a.strand": "+",
+                "b.chrom": "T1",
+                "b.start": 0,
+                "b.end": 100,
+                "b.strand": "+",
+                "block_len": 100,
+            }
+        ]
+    )
     mapping = MappingTable(data)
 
     with pytest.raises(AssertionError, match="target and query must be"):

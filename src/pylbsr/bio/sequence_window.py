@@ -272,7 +272,9 @@ def fetch_windowed_sequence(
         if row["is_padding"] or row["is_masked"]:
             parts.append(fill_char * seg_len)
         else:
-            parts.append(str(fasta[row["genomic_chrom"]][int(row["genomic_start"]):int(row["genomic_end"])]))
+            parts.append(
+                str(fasta[row["genomic_chrom"]][int(row["genomic_start"]) : int(row["genomic_end"])])
+            )
 
     result = "".join(parts)
 

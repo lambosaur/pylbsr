@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-
 dtype_str_map = {
     "torch.float16": torch.float16,
     "torch.float32": torch.float32,
@@ -23,7 +22,6 @@ dtype_str_map = {
     "torch.int32": torch.int32,
     "torch.int64": torch.int64,
 }
-
 
 
 def select_gpu(query: int | str) -> torch.device:
@@ -109,4 +107,3 @@ def get_device(requested_device: str) -> torch.device:
 
     logger.info("Using CPU")
     return torch.device("cpu")
-

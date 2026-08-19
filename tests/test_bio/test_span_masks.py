@@ -57,11 +57,14 @@ class TestIntervalsToSpanMasks:
         starts = np.array([0, 4, 7])
         ends = np.array([4, 8, 10])
         result = intervals_to_span_masks(starts, ends, length=11)
-        expected = np.array([
-            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0],
-        ], dtype=np.int64)
+        expected = np.array(
+            [
+                [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0],
+            ],
+            dtype=np.int64,
+        )
         np.testing.assert_array_equal(result, expected)
 
     def test_shape(self) -> None:
@@ -131,12 +134,12 @@ class TestRelativeCoordinatesToScatteredSpanMasks:
         assert result[1, 0] == 0  # q2 doesn't cover [0,2)
 
     def test_empty_disallowed_raises(self) -> None:
-        df = pd.DataFrame({
-            "name": pd.Series([], dtype=str),
-            "start": pd.Series([], dtype="int64"),
-            "end": pd.Series([], dtype="int64"),
-        })
+        df = pd.DataFrame(
+            {
+                "name": pd.Series([], dtype=str),
+                "start": pd.Series([], dtype="int64"),
+                "end": pd.Series([], dtype="int64"),
+            }
+        )
         with pytest.raises(ValueError, match="allow_empty=False"):
             relative_coordinates_to_scattered_span_masks(df, ["q1"], length=5, allow_empty=False)
-
-

@@ -14,11 +14,11 @@ bed6_cols = ["chrom", "start", "end", "name", "score", "strand"]
 narrowpeak_cols = [
     *bed6_cols,
     *[
-    "SignalValue",
-    "Pvalue",
-    "Qvalue",
-    "PeakSummitOffset",
-]
+        "SignalValue",
+        "Pvalue",
+        "Qvalue",
+        "PeakSummitOffset",
+    ],
 ]
 
 
@@ -99,4 +99,3 @@ def identifiers_to_bed6_dataframe(
     df = df.reset_index().rename(columns={"index": "score"})
 
     return cast(DataFrame[Bed6IntervalsModel], df.loc[:, bed6_cols])
-

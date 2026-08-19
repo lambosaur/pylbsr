@@ -31,9 +31,7 @@ class TestFixedStepBlock:
         assert len(block) == 3
 
     def test_with_step_and_span(self):
-        block = FixedStepBlock(
-            chrom="chr1", start=101, values=(0.1, 0.2, 0.3), step=3, span=2
-        )
+        block = FixedStepBlock(chrom="chr1", start=101, values=(0.1, 0.2, 0.3), step=3, span=2)
         assert block.start == 101
         # stop = 101 + 3*(3-1) + 2-1 = 108
         assert block.stop == 108
@@ -44,9 +42,7 @@ class TestFixedStepBlock:
         assert block.indexed_values == ((1, 10.0), (2, 20.0))
 
     def test_indexed_values_with_span(self):
-        block = FixedStepBlock(
-            chrom="chr1", start=1, values=(10.0, 20.0), step=2, span=2
-        )
+        block = FixedStepBlock(chrom="chr1", start=1, values=(10.0, 20.0), step=2, span=2)
         # Value 10.0 at positions 1,2; value 20.0 at positions 3,4
         assert block.indexed_values == ((1, 10.0), (2, 10.0), (3, 20.0), (4, 20.0))
 
@@ -60,9 +56,7 @@ class TestFixedStepBlock:
         assert block.header == "fixedStep chrom=chr1 start=1 step=1"
 
     def test_header_with_span(self):
-        block = FixedStepBlock(
-            chrom="chr1", start=100, values=(1.0,), step=5, span=3
-        )
+        block = FixedStepBlock(chrom="chr1", start=100, values=(1.0,), step=5, span=3)
         assert block.header == "fixedStep chrom=chr1 start=100 step=5 span=3"
 
     def test_to_wig_simple(self):
@@ -71,9 +65,7 @@ class TestFixedStepBlock:
         assert block.to_wig() == expected
 
     def test_to_wig_with_span(self):
-        block = FixedStepBlock(
-            chrom="chr1", start=100, values=(10.0,), step=5, span=3
-        )
+        block = FixedStepBlock(chrom="chr1", start=100, values=(10.0,), step=5, span=3)
         expected = "fixedStep chrom=chr1 start=100 step=5 span=3\n10.0"
         assert block.to_wig() == expected
 
@@ -86,9 +78,7 @@ class TestFixedStepBlock:
             FixedStepBlock(chrom="chr1", start=1, values=(1.0,), step=2, span=3)
 
     def test_as_series_full_range(self):
-        block = FixedStepBlock(
-            chrom="chr1", start=1, values=(10.0, 20.0), step=3, span=1
-        )
+        block = FixedStepBlock(chrom="chr1", start=1, values=(10.0, 20.0), step=3, span=1)
         series = block.as_series(full_range=True)
         assert series[1] == 10.0
         assert series[4] == 20.0
@@ -109,77 +99,53 @@ class TestVariableStepBlock:
     """Tests for VariableStepBlock."""
 
     def test_basic_construction(self):
-        block = VariableStepBlock(
-            chrom="chr2", positions=(100, 200, 300), values=(1.0, 2.0, 3.0)
-        )
+        block = VariableStepBlock(chrom="chr2", positions=(100, 200, 300), values=(1.0, 2.0, 3.0))
         assert block.start == 100
         assert block.stop == 300
         assert block.span == 1
 
     def test_with_span(self):
-        block = VariableStepBlock(
-            chrom="chr2", positions=(100, 200), values=(1.0, 2.0), span=3
-        )
+        block = VariableStepBlock(chrom="chr2", positions=(100, 200), values=(1.0, 2.0), span=3)
         assert block.start == 100
         assert block.stop == 202  # 200 + 3 - 1
 
     def test_indexed_values(self):
-        block = VariableStepBlock(
-            chrom="chr2", positions=(10, 20), values=(1.5, 2.5)
-        )
+        block = VariableStepBlock(chrom="chr2", positions=(10, 20), values=(1.5, 2.5))
         assert block.indexed_values == ((10, 1.5), (20, 2.5))
 
     def test_indexed_values_with_span(self):
-        block = VariableStepBlock(
-            chrom="chr2", positions=(10, 20), values=(1.5, 2.5), span=2
-        )
-        assert block.indexed_values == (
-            (10, 1.5), (11, 1.5), (20, 2.5), (21, 2.5)
-        )
+        block = VariableStepBlock(chrom="chr2", positions=(10, 20), values=(1.5, 2.5), span=2)
+        assert block.indexed_values == ((10, 1.5), (11, 1.5), (20, 2.5), (21, 2.5))
 
     def test_header_without_span(self):
-        block = VariableStepBlock(
-            chrom="chr2", positions=(100,), values=(1.0,)
-        )
+        block = VariableStepBlock(chrom="chr2", positions=(100,), values=(1.0,))
         assert block.header == "variableStep chrom=chr2"
 
     def test_header_with_span(self):
-        block = VariableStepBlock(
-            chrom="chr2", positions=(100,), values=(1.0,), span=5
-        )
+        block = VariableStepBlock(chrom="chr2", positions=(100,), values=(1.0,), span=5)
         assert block.header == "variableStep chrom=chr2 span=5"
 
     def test_to_wig(self):
-        block = VariableStepBlock(
-            chrom="chr2", positions=(100, 200), values=(1.5, 2.5)
-        )
+        block = VariableStepBlock(chrom="chr2", positions=(100, 200), values=(1.5, 2.5))
         expected = "variableStep chrom=chr2\n100 1.5\n200 2.5"
         assert block.to_wig() == expected
 
     def test_to_wig_with_span(self):
-        block = VariableStepBlock(
-            chrom="chr2", positions=(100, 200), values=(1.5, 2.5), span=3
-        )
+        block = VariableStepBlock(chrom="chr2", positions=(100, 200), values=(1.5, 2.5), span=3)
         expected = "variableStep chrom=chr2 span=3\n100 1.5\n200 2.5"
         assert block.to_wig() == expected
 
     def test_non_increasing_positions_raises(self):
         with pytest.raises(ValueError, match="strictly increasing"):
-            VariableStepBlock(
-                chrom="chr1", positions=(200, 100), values=(1.0, 2.0)
-            )
+            VariableStepBlock(chrom="chr1", positions=(200, 100), values=(1.0, 2.0))
 
     def test_span_overlap_raises(self):
         with pytest.raises(ValueError, match="overlap"):
-            VariableStepBlock(
-                chrom="chr1", positions=(100, 101), values=(1.0, 2.0), span=3
-            )
+            VariableStepBlock(chrom="chr1", positions=(100, 101), values=(1.0, 2.0), span=3)
 
     def test_mismatched_lengths_raises(self):
         with pytest.raises(ValueError, match="same length"):
-            VariableStepBlock(
-                chrom="chr1", positions=(100, 200, 300), values=(1.0, 2.0)
-            )
+            VariableStepBlock(chrom="chr1", positions=(100, 200, 300), values=(1.0, 2.0))
 
 
 # ============================================================================
@@ -307,9 +273,7 @@ class TestWigBlockCollection:
     def test_mixed_block_types(self):
         coll = WigBlockCollection()
         fb = FixedStepBlock(chrom="chr1", start=1, values=(1.0, 2.0))
-        vb = VariableStepBlock(
-            chrom="chr1", positions=(100, 200), values=(3.0, 4.0)
-        )
+        vb = VariableStepBlock(chrom="chr1", positions=(100, 200), values=(3.0, 4.0))
         coll.add(fb)
         coll.add(vb)
         assert len(coll) == 2
@@ -336,9 +300,7 @@ class TestWigBlockCollection:
     def test_to_wig_multiple_blocks(self):
         coll = WigBlockCollection()
         coll.add(FixedStepBlock(chrom="chr1", start=1, values=(1.0,)))
-        coll.add(
-            VariableStepBlock(chrom="chr1", positions=(100,), values=(2.0,))
-        )
+        coll.add(VariableStepBlock(chrom="chr1", positions=(100,), values=(2.0,)))
         buf = StringIO()
         coll.to_wig(buf)
         content = buf.getvalue()
@@ -429,20 +391,14 @@ class TestReadWig:
         assert blocks[1].values == (3.0,)
 
     def test_read_mixed_types(self):
-        content = (
-            "fixedStep chrom=chr1 start=1 step=1\n1.0\n"
-            "variableStep chrom=chr2\n100 2.0\n"
-        )
+        content = "fixedStep chrom=chr1 start=1 step=1\n1.0\nvariableStep chrom=chr2\n100 2.0\n"
         blocks = list(read_wig(StringIO(content)))
         assert len(blocks) == 2
         assert isinstance(blocks[0], FixedStepBlock)
         assert isinstance(blocks[1], VariableStepBlock)
 
     def test_skips_track_lines(self):
-        content = (
-            'track type=wiggle_0 name="test"\n'
-            "fixedStep chrom=chr1 start=1 step=1\n1.0\n"
-        )
+        content = 'track type=wiggle_0 name="test"\nfixedStep chrom=chr1 start=1 step=1\n1.0\n'
         blocks = list(read_wig(StringIO(content)))
         assert len(blocks) == 1
 
@@ -458,15 +414,7 @@ class TestReadWig:
         assert blocks[1].chrom == "chr2"
 
     def test_skips_comments_and_empty_lines(self):
-        content = (
-            "# comment\n"
-            "\n"
-            "fixedStep chrom=chr1 start=1 step=1\n"
-            "1.0\n"
-            "\n"
-            "# another comment\n"
-            "2.0\n"
-        )
+        content = "# comment\n\nfixedStep chrom=chr1 start=1 step=1\n1.0\n\n# another comment\n2.0\n"
         blocks = list(read_wig(StringIO(content)))
         assert len(blocks) == 1
         assert blocks[0].values == (1.0, 2.0)
@@ -484,11 +432,7 @@ class TestReadWig:
     def test_round_trip(self):
         coll = WigBlockCollection()
         coll.add(FixedStepBlock(chrom="chr1", start=1, values=(1.0, 2.0, 3.0)))
-        coll.add(
-            VariableStepBlock(
-                chrom="chr1", positions=(100, 200), values=(4.0, 5.0)
-            )
-        )
+        coll.add(VariableStepBlock(chrom="chr1", positions=(100, 200), values=(4.0, 5.0)))
         buf = StringIO()
         coll.to_wig(buf)
         buf.seek(0)

@@ -69,6 +69,7 @@ class GFFSchema(DataFrameModel):
 
     class Config:
         """Pandera configuration for GFFSchema."""
+
         coerce = True  # automatically cast types
         strict = True  # no extra columns allowed
 
@@ -139,6 +140,7 @@ def split_attributes(col: pd.Series, kv_sep: str = "=", field_sep: str = ";") ->
 
     return pd.json_normalize(list(col.apply(parse)))
 
+
 def write_gff(
     gff: pd.DataFrame,
     filepath: os.PathLike,
@@ -156,6 +158,7 @@ def write_gff(
             na_rep=".",
             mode="a",
         )
+
 
 class ExtendedGFF:
     """Class representing a GFF file with split attributes."""
@@ -255,7 +258,6 @@ def gff_transcript_segments_to_bed(gff: pd.DataFrame) -> pd.DataFrame:
     else:
         bed_introns["name"] = pd.Series(dtype=str)
 
-
     # Merge all segments back
     bed6_cols = ["chrom", "start", "end", "name", "score", "strand"]
 
@@ -322,4 +324,3 @@ def get_transcript_boundaries_from_gff(gff: pd.DataFrame) -> GenomicInterval:
             strand=gff.iloc[0]["strand"],
         )
         return transcript_boundaries
-

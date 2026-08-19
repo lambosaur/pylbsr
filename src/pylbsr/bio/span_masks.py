@@ -186,5 +186,3 @@ def relative_coordinates_to_scattered_span_masks(
     span_masks = intervals_to_span_masks(starts, ends, length)
     combined = combine_span_masks_on_identifiers(span_masks, list(identifiers))
     return scatter_span_masks(combined, list(np.unique(identifiers)), all_identifiers)
-
-

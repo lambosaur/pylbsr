@@ -346,7 +346,9 @@ def _parse_value(s: str) -> int | float:
 
 
 def _build_block(
-    block_type: str, params: dict[str, str], data_lines: list[str],
+    block_type: str,
+    params: dict[str, str],
+    data_lines: list[str],
 ) -> WiggleBlock:
     """Construct a WiggleBlock from a parsed declaration and its data lines."""
     if block_type == "fixedStep":

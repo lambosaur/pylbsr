@@ -16,6 +16,7 @@ def set_name_from_coordinates(interval: pbt.cbedtools.Interval) -> pbt.cbedtools
     interval.name = f"{interval.chrom}:{interval.start}-{interval.end}:{interval.strand}"
     return interval
 
+
 def bt_center_interval_on(
     interval: pbt.cbedtools.Interval,
     center_on: Literal["5p", "center", "3p"],
