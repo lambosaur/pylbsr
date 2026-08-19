@@ -4,6 +4,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any
 
+import liftover
 import pandas as pd
 import pytest
 
@@ -215,7 +216,7 @@ def expected_chain_reverse_exons_a_to_b() -> dict[str, Any]:
         "score": 0,
         "t_chrom": "chr1",
         "t_size": 2412564,
-        "t_strand": "-",
+        "t_strand": "+",
         "t_start": 2403973,
         "t_end": 2412564,
         "q_chrom": "ENST00000447513.7",
@@ -595,7 +596,7 @@ def test_gff_to_chains_reverse_exons(gff_reverse_strand: pd.DataFrame) -> None:
 
     assert chain.t_chrom == "chr1"
     assert chain.q_chrom == "ENST00000447513.7"
-    assert chain.t_strand == "-"
+    assert chain.t_strand == "+"
     assert chain.q_strand == "-"
     assert len(chain.blocks) == 6
 
@@ -718,3 +719,25 @@ def test_mapping_table_invalid_target_query() -> None:
 
     with pytest.raises(AssertionError, match="target and query must be"):
         mapping.to_chain(target="x", query="y", chain_id=1, score=0)
+
+
+# ============================================================================
+# TESTS - liftover integration
+# ============================================================================
+
+
+def test_gff_to_chains_reverse_strand_loads_in_liftover(
+    gff_reverse_strand: pd.DataFrame, tmp_path: Path
+) -> None:
+    """Regression test for issue #1: a minus-strand genome->transcript chain must load in liftover.
+
+    liftover >=1.4.0 raises ValueError('target strand is not "+"') if the chain header's target
+    strand isn't '+' -- regardless of the mapped entity's own strand, since the target coordinate
+    system is always forward per UCSC chain format convention.
+    """
+    chains = gff_to_chains(gff_reverse_strand, "transcript_id", "exon", "seqid", "entity_id")
+    chain_path = tmp_path / "genome_to_transcript.chain"
+    with chain_path.open("w") as handle:
+        write_chains(chains, handle)
+
+    liftover.ChainFile(chain_path, one_based=True)
