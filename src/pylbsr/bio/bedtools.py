@@ -1,3 +1,5 @@
+"""Helpers to be used with `pbt.BedTool.each()`."""
+
 from typing import Literal
 
 import pybedtools as pbt
@@ -10,10 +12,7 @@ def set_name(interval: pbt.cbedtools.Interval, name: str) -> pbt.cbedtools.Inter
 
 
 def set_name_from_coordinates(interval: pbt.cbedtools.Interval) -> pbt.cbedtools.Interval:
-    """Set the `name` field of a pyBedTools Interval object to a str representation of its coordinates.
-
-    To be used with `pbt.BedTool.each()`.
-    """
+    """Set the `name` field of a pyBedTools Interval object to a str of its coordinates."""
     interval.name = f"{interval.chrom}:{interval.start}-{interval.end}:{interval.strand}"
     return interval
 
@@ -22,7 +21,7 @@ def bt_center_interval_on(
     center_on: Literal["5p", "center", "3p"],
     stranded: bool,
 ) -> pbt.cbedtools.Interval:
-    """Bedtools function to generate 1nt intervals from input interval centered on desired location."""
+    """Generate a 1nt interval from `interval`, centered on `center_on`."""
     positive_strand_encoding = ["+", "+1", 1, "1", "forward", "fwd", "plus", "pos"]
     negative_strand_encoding = ["-", "-1", -1, "reverse", "rev", "minus", "neg"]
 
