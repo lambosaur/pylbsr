@@ -1,14 +1,11 @@
 """Tests for ml_stats.group_comparison.apply_df_multi_tests.
 
-Split from test_group_comparison.py because this one function needs statsmodels (the
-ml_stats extra); the rest of the module only needs numpy/pandas/scipy (core deps).
+Split from test_group_comparison.py because this one function needs statsmodels -- a core
+dependency (see pyproject.toml), same as the rest of the module's numpy/pandas/scipy needs.
 """
 
 import numpy as np
 import pandas as pd
-import pytest
-
-pytest.importorskip("statsmodels")
 
 from pylbsr.ml_stats.group_comparison import apply_df_multi_tests
 
