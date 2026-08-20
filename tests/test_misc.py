@@ -3,18 +3,12 @@
 Only covers what was newly ported here (slice_range_overlapping, make_experiment_outputdir,
 silent_try_convert/try_int/try_float, drop_multiple_columns, explode_df_from_multivalue_columns);
 the rest of misc.py had no test coverage before this and is out of scope for this change.
-
-Requires the `ml` extra (torch): misc.py imports torch unconditionally at module level (for
-set_seed), a pre-existing condition unrelated to anything ported here -- so importing
-pylbsr.misc at all requires torch, even for these torch-unrelated functions.
 """
 
 from pathlib import Path
 
 import pandas as pd
 import pytest
-
-pytest.importorskip("torch")
 
 from pylbsr.misc import (
     drop_multiple_columns,

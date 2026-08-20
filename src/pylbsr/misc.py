@@ -7,7 +7,6 @@ import glob
 import gzip
 import logging
 import os
-import random
 import shutil
 import string
 import tempfile
@@ -17,7 +16,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import torch
 from Bio import bgzf
 from dotmap import DotMap
 
@@ -66,21 +64,6 @@ def sanitize_dotmap(dm: DotMap) -> DotMap:
         if isinstance(v, DotMap):
             sanitize_dotmap(v)
     return dm
-
-
-def set_seed(seed: int = 42) -> None:
-    """Set seed to all possible random number generators."""
-    # Required by cuBLAS when torch.use_deterministic_algorithms(True) is active
-    # on CUDA < 12.x; harmless on newer stacks. Must be set before cuBLAS init.
-    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    torch.use_deterministic_algorithms(True)
-    print(f"Seed set to {seed}")
 
 
 def create_randomized_tmp_dir(parent_dir: os.PathLike | None = None) -> str:  # noqa: C901 -- barely over threshold, straightforward fallback chain
