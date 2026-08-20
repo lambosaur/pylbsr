@@ -2,6 +2,8 @@
 
 import colorsys
 import zlib
+from collections.abc import Iterable
+from typing import Any
 
 import matplotlib as mpl
 import matplotlib.colors
@@ -125,3 +127,25 @@ def stable_categorical_color(key: str, palette: list[str]) -> str:
         '#66c2a5'
     """
     return palette[zlib.crc32(key.encode()) % len(palette)]
+
+
+def make_categorical_palette(category_ids: Iterable[Any], palette: str = "tab20") -> dict[Any, str]:
+    """Deterministically map a known, full set of category IDs to hex colors.
+
+    Assigns colors by sorted position, so the same ``category_ids`` set always gets the
+    same mapping, with no collisions within that set. Unlike `stable_categorical_color`
+    (hash-based, one key at a time, no need to know the full set upfront, but can collide
+    across a small palette), use this when the full set of categories is known in advance
+    and zero collisions within it matters -- e.g. coloring clusters consistently across
+    several plots of the same clustering run.
+
+    Args:
+        category_ids: The categories to assign colors to.
+        palette: A seaborn categorical palette name.
+
+    Returns:
+        Mapping of each category ID to a hex color string.
+    """
+    sorted_ids = sorted(category_ids)
+    colors = sns.color_palette(palette=palette, n_colors=len(sorted_ids))
+    return dict(zip(sorted_ids, [mpl.colors.rgb2hex(c) for c in colors]))
