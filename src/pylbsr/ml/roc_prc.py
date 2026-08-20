@@ -1,15 +1,20 @@
 """ROC and precision-recall curve results, for binary classifier evaluation."""
 
 import warnings
-from typing import Any
+from typing import Any, NamedTuple, cast
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import sklearn.metrics
 from matplotlib.axes import Axes
+from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from typing_extensions import Self
+
+from pylbsr.plotting import patch_labelling
 
 
 class PRCresults:
@@ -421,7 +426,7 @@ class ListPRCresults:
                 params.update(plot_params)
                 ax.plot(result.rec, result.prec, **params)
 
-            interp_precs.append(result.prec)
+            interp_precs.append(result.interp_prec)
 
         inter_precs = np.array(interp_precs, dtype=float)
         mean_precs = np.nanmean(inter_precs, axis=0)
@@ -463,3 +468,351 @@ class ListPRCresults:
         plt.tight_layout()
 
         return (fig, ax)
+
+
+class Clf_scores(NamedTuple):
+    """Point (single-threshold) classifier evaluation metrics."""
+
+    accuracy: float
+    balanced_accuracy: float
+    recall: float
+    precision: float
+    specificity: float
+    f1: float
+
+
+def evaluate_classifier_preds(y_true: np.ndarray, y_pred: np.ndarray) -> Clf_scores:
+    """Compute point classification metrics from hard 0/1 predictions.
+
+    Unlike the rest of this module (which evaluates continuous scores across all
+    thresholds via ROC/PRC curves), this operates on already-thresholded predictions,
+    for binary classes labeled 0 and 1.
+
+    Args:
+        y_true: True labels (0/1).
+        y_pred: Predicted labels (0/1), already thresholded.
+
+    Returns:
+        accuracy/balanced_accuracy/recall/precision/specificity/f1.
+    """
+    return Clf_scores(
+        accuracy=sklearn.metrics.accuracy_score(y_true, y_pred),
+        balanced_accuracy=sklearn.metrics.balanced_accuracy_score(y_true, y_pred),
+        recall=sklearn.metrics.recall_score(y_true, y_pred),
+        precision=sklearn.metrics.precision_score(y_true, y_pred),
+        specificity=sklearn.metrics.recall_score(1 - y_true, 1 - y_pred),
+        f1=sklearn.metrics.f1_score(y_true, y_pred),
+    )
+
+
+def plot_confusion_matrix(
+    cm: np.ndarray,
+    classes: list[str],
+    cmap: str | list[str] | Colormap | None = None,
+    color_class: int | None = None,
+    title: str | None = None,
+    normalize: bool = False,
+    max_count: float | None = None,
+    ax: Axes | None = None,
+) -> tuple[Figure | None, Axes]:
+    """Heatmap of a confusion matrix, from `sklearn.metrics.confusion_matrix`.
+
+    Args:
+        cm: 2D confusion matrix array.
+        classes: Class names, in the same order as `cm`'s rows/columns.
+        cmap: Colormap; a diverging map is used by default when `color_class` is given,
+            otherwise `"Blues"`.
+        color_class: If given (0 or 1), colors predicted-`color_class` cells distinctly
+            from predicted-other-class cells (by negating the latter's sign before
+            plotting, with a diverging colormap).
+        title: Plot title.
+        normalize: Show row-normalized percentages instead of raw counts (both are
+            still annotated on the cells).
+        max_count: Colormap upper bound; defaults to `cm`'s own max (or 1 if `normalize`).
+        ax: Axes to plot into; a new figure is created if None.
+
+    Returns:
+        `(fig, ax)`; `fig` is None when `ax` was passed in.
+    """
+    cm_counts = cm.copy()
+    cm = cm.copy()
+    if normalize:
+        cm = cm.astype(float) / cm.sum(axis=1)[:, np.newaxis]
+        cm = np.around(cm, decimals=3)
+        max_count = 1
+    elif max_count is None:
+        max_count = cm.max()
+
+    # Distinguish *predicted* color_class cells from *predicted* other-class cells by
+    # negating the latter's sign, so a diverging colormap colors them oppositely.
+    if color_class is not None:
+        cm[:, abs(color_class - 1)] = -cm[:, abs(color_class - 1)]
+        min_count = -max_count
+        if cmap is None:
+            cmap = sns.diverging_palette(160, 0, n=51)
+    else:
+        # Bug in the original: this branch unconditionally overwrote cmap with Blues,
+        # silently ignoring any cmap the caller explicitly passed. Only default it.
+        if cmap is None:
+            cmap = mpl.colormaps["Blues"]
+        min_count = 0
+
+    if normalize:
+        annot_mat = (
+            pd.DataFrame(cm.astype(str)) + "\n(N=" + pd.DataFrame(cm_counts).map("{:,}".format) + ")"
+        ).to_numpy()
+        fmt = ""
+    else:
+        annot_mat = cm
+        fmt = ","
+
+    if ax is None:
+        fig = plt.figure(figsize=(6, 6))
+        ax = fig.add_subplot(1, 1, 1)
+    else:
+        fig = None
+
+    sns.heatmap(
+        cm,
+        vmin=min_count,
+        vmax=max_count,
+        cmap=cmap,
+        center=0,
+        annot=annot_mat,
+        fmt=fmt,
+        annot_kws={"size": 20},
+        xticklabels=classes,
+        yticklabels=classes,
+        linewidth=1.2,
+        square=True,
+        cbar=False,
+        ax=ax,
+    )
+
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=45, ha="right")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
+    if title is not None:
+        ax.set_title(title)
+
+    ax.set_ylabel("True label")
+    ax.set_xlabel("Predicted label")
+    ax.grid(False)
+    plt.tight_layout()
+
+    return (fig, ax)
+
+
+def plot_classification_evaluation(
+    list_ytrue_ypred: list[tuple[np.ndarray, np.ndarray]],
+    target_class: int = 1,
+    title: str = "",
+    ax: Axes | None = None,
+) -> tuple[Figure | None, Axes]:
+    """Barplot of point classification metrics (accuracy/precision/recall/F1/...).
+
+    Args:
+        list_ytrue_ypred: One (y_true, y_pred) pair of hard 0/1 labels per fold/run
+            (a single-element list for a single evaluation). Error bars (std across
+            entries) are shown whenever there's more than one.
+        target_class: Which class (0 or 1) recall/precision/f1 are computed against.
+        title: Plot title.
+        ax: Axes to plot into; a new figure is created if None.
+
+    Returns:
+        `(fig, ax)`; `fig` is None when `ax` was passed in.
+    """
+    assert target_class in (0, 1), "target_class must be 0 or 1"
+
+    if target_class == 0:
+        list_ytrue_ypred = [(1 - y_true, 1 - y_pred) for y_true, y_pred in list_ytrue_ypred]
+
+    if ax is None:
+        fig = plt.figure(figsize=(12, 6))
+        ax = fig.add_subplot(1, 1, 1)
+    else:
+        fig = None
+
+    scores_df = pd.DataFrame(
+        [evaluate_classifier_preds(y_true, y_pred) for y_true, y_pred in list_ytrue_ypred]
+    )
+
+    has_multiple = len(list_ytrue_ypred) > 1
+    errorbar = "sd" if has_multiple else None
+    sns.barplot(
+        data=scores_df.melt(), x="variable", y="value", color="#BBBBBB", errorbar=errorbar, ax=ax
+    )
+
+    ax.set_xlabel("")
+    ax.set_ylim(0, 1)
+    ax.set_title(title, pad=25)
+
+    mean_scores = {field: f"{value:.3}" for field, value in scores_df.mean().to_dict().items()}
+    for tick_label, patch in zip(ax.get_xticklabels(), ax.patches):
+        # sns.barplot's patches are always Rectangle at runtime; ax.patches is only
+        # statically typed as the more general Patch.
+        bar = cast(mpl.patches.Rectangle, patch)
+        shift = bar.get_width() / 4 if has_multiple else 0
+        patch_labelling(ax, bar, mean_scores[tick_label.get_text()], vertical=True, shift=shift)
+
+    sns.despine(ax=ax)
+    ax.grid(False)
+    tick_positions = ax.get_xticks()
+    new_labels = [t.get_text().replace("_", "\n") for t in ax.get_xticklabels()]
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels(new_labels, rotation=45, ha="right")
+
+    return (fig, ax)
+
+
+def quality_classification_plots(
+    list_ytrue_ypred: list[tuple[np.ndarray, np.ndarray]],
+    class_names: list[str],
+    normalize: bool = False,
+    cmap: str | list[str] | Colormap | None = None,
+    color_class: int | None = None,
+    main_title: str = "",
+) -> tuple[Figure, list[Axes]]:
+    """Confusion matrix and point-metric barplot side by side.
+
+    Args:
+        list_ytrue_ypred: One (y_true, y_pred) pair of hard 0/1 labels per fold/run.
+        class_names: Class names, in label order (index 0, then 1).
+        normalize: Passed through to `plot_confusion_matrix`.
+        cmap: Passed through to `plot_confusion_matrix`.
+        color_class: Passed through to `plot_confusion_matrix`.
+        main_title: Figure title.
+
+    Returns:
+        `(fig, [confusion_matrix_ax, metrics_ax])`.
+    """
+    title_cm = "Confusion matrix" if len(list_ytrue_ypred) == 1 else "Average confusion matrix"
+
+    fig = plt.figure(figsize=(21, 6))
+    gs = fig.add_gridspec(nrows=1, ncols=2, width_ratios=[1 / 3, 2 / 3])
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1])
+
+    mean_cm = (
+        np.array(
+            [sklearn.metrics.confusion_matrix(y_true, y_pred) for y_true, y_pred in list_ytrue_ypred]
+        )
+        .mean(axis=0)
+        .astype(int)
+    )
+
+    plot_confusion_matrix(
+        mean_cm,
+        class_names,
+        cmap=cmap,
+        normalize=normalize,
+        color_class=color_class,
+        title=title_cm,
+        ax=ax1,
+    )
+    plot_classification_evaluation(list_ytrue_ypred, ax=ax2)
+
+    fig.suptitle(main_title)
+    return (fig, [ax1, ax2])
+
+
+def plot_predproba_distributions(
+    list_ytrue_ypred: list[tuple[np.ndarray, np.ndarray]],
+    class_names: tuple[str, str] = ("Negatives", "Positives"),
+    color_positives: str = "#cf385b",
+    color_negatives: str = "#43b0d0",
+    ax: Axes | None = None,
+) -> tuple[Figure | None, Axes]:
+    """Density plot of predicted scores, split by true class.
+
+    A "does my classifier separate the classes at all" diagnostic, complementary to
+    ROC/PRC curves (which summarize separation across thresholds into a single AUC).
+
+    Args:
+        list_ytrue_ypred: One (y_true, y_pred) pair of scores per fold/run; `y_pred`
+            is a continuous score (as in `ROCresults.from_ytrue_ypred`), not a hard label.
+        class_names: (negative_class_name, positive_class_name).
+        color_positives: Color for the positive-class density.
+        color_negatives: Color for the negative-class density.
+        ax: Axes to plot into; a new figure is created if None.
+
+    Returns:
+        `(fig, ax)`; `fig` is None when `ax` was passed in.
+    """
+    if ax is None:
+        fig = plt.figure(figsize=(10, 6))
+        ax = fig.add_subplot(1, 1, 1)
+    else:
+        fig = None
+
+    positives_scores = [y_pred[y_true == 1] for y_true, y_pred in list_ytrue_ypred]
+    negatives_scores = [y_pred[y_true == 0] for y_true, y_pred in list_ytrue_ypred]
+
+    for scores, color in [(positives_scores, color_positives), (negatives_scores, color_negatives)]:
+        for fold_scores in scores:
+            sns.kdeplot(fold_scores, alpha=0.15, color=color, fill=True, cut=2, ax=ax)
+        sns.kdeplot(np.concatenate(scores), fill=False, alpha=0.25, color=color, cut=2, ax=ax)
+
+    max_ylim = ax.get_ylim()[1] * 1.1
+    ax.set_ylim(0, max_ylim)
+    ax.set_xlim(-0.08, 1.08)
+    ax.set_ylabel("Density")
+    ax.set_xlabel("Prediction score")
+
+    handles = [
+        mpl.patches.Patch(color=color_positives, alpha=0.5, label=class_names[1]),
+        mpl.patches.Patch(color=color_negatives, alpha=0.5, label=class_names[0]),
+    ]
+    ax.legend(handles=handles, bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.0)
+    ax.set_title("Density plot of prediction scores")
+
+    return (fig, ax)
+
+
+def separability_plots(
+    list_ytrue_ypred: list[tuple[np.ndarray, np.ndarray]],
+    class_names: tuple[str, str] = ("0", "1"),
+    color_positives: str = "#cf385b",
+    color_negatives: str = "#43b0d0",
+    mean_only: bool = False,
+    main_title: str = "",
+) -> tuple[Figure, list[Axes]]:
+    """ROC curve, PRC curve, and prediction-score density plot, side by side.
+
+    Reuses ListROCresults/ListPRCresults for the first two panels rather than a
+    separate curve-averaging implementation.
+
+    Args:
+        list_ytrue_ypred: One (y_true, y_pred) pair of continuous scores per fold/run.
+        class_names: (negative_class_name, positive_class_name), for the density panel.
+        color_positives: Curve/density color for the positive class.
+        color_negatives: Density color for the negative class (ROC/PRC panels only
+            plot one curve color, matching ListROCresults/ListPRCresults' own default).
+        mean_only: Passed through to ListROCresults.plot/ListPRCresults.plot.
+        main_title: Figure title.
+
+    Returns:
+        `(fig, [roc_ax, prc_ax, density_ax])`.
+    """
+    fig = plt.figure(figsize=(21, 6))
+    ax1 = fig.add_subplot(1, 3, 1)
+    ax2 = fig.add_subplot(1, 3, 2)
+    ax3 = fig.add_subplot(1, 3, 3)
+
+    roc_results = ListROCresults(
+        [ROCresults.from_ytrue_ypred(y_true, y_pred) for y_true, y_pred in list_ytrue_ypred]
+    )
+    prc_results = ListPRCresults(
+        [PRCresults.from_ytrue_ypred(y_true, y_pred) for y_true, y_pred in list_ytrue_ypred]
+    )
+    roc_results.plot(mean_only=mean_only, ax=ax1, plot_params={"color": color_positives})
+    prc_results.plot(mean_only=mean_only, ax=ax2, plot_params={"color": color_positives})
+    plot_predproba_distributions(
+        list_ytrue_ypred,
+        class_names=class_names,
+        color_positives=color_positives,
+        color_negatives=color_negatives,
+        ax=ax3,
+    )
+
+    fig.suptitle(main_title, fontsize=18, fontweight="bold", y=1.10)
+    return (fig, [ax1, ax2, ax3])
