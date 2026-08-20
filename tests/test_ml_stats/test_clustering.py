@@ -1,20 +1,13 @@
-"""Tests for ml.clustering -- hierarchical-clustering model selection.
-
-Requires the `ml` extra (scikit-learn); skipped entirely if it's not installed.
-"""
+"""Tests for ml_stats.clustering -- hierarchical-clustering model selection."""
 
 import matplotlib
 
 matplotlib.use("Agg")
 
 import pandas as pd
-import pytest
-
-pytest.importorskip("sklearn")
-
 from scipy.cluster.hierarchy import linkage
 
-from pylbsr.ml.clustering import hierarchical_clustering_cut_tree, plot_silhouettes
+from pylbsr.ml_stats.clustering import hierarchical_clustering_cut_tree, plot_silhouettes
 
 # Two well-separated blobs of 3 points each -- should cleanly split into 2 clusters.
 X = pd.DataFrame(

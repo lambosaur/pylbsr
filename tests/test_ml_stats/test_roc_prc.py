@@ -1,14 +1,9 @@
-"""Tests for ml.roc_prc -- ROC/PRC curve results for binary classifier evaluation.
-
-Requires the `ml` extra (scikit-learn); skipped entirely if it's not installed.
-"""
+"""Tests for ml_stats.roc_prc -- ROC/PRC curve results for binary classifier evaluation."""
 
 import numpy as np
 import pytest
 
-pytest.importorskip("sklearn")
-
-from pylbsr.ml.roc_prc import ListPRCresults, ListROCresults, PRCresults, ROCresults
+from pylbsr.ml_stats.roc_prc import ListPRCresults, ListROCresults, PRCresults, ROCresults
 
 # Mildly imbalanced (4 negatives, 2 positives) so the majority-class baseline in PRCresults
 # is unambiguous -- a perfectly balanced split leaves pandas' value_counts().idxmax() tie-break

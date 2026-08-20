@@ -1,12 +1,16 @@
 """Tests for the pyutils-ported misc.py additions.
 
 Only covers what was newly ported here (slice_range_overlapping, make_experiment_outputdir,
-silent_try_convert/try_int/try_float, drop_multiple_columns, explode_df_from_multivalue_columns);
-the rest of misc.py had no test coverage before this and is out of scope for this change.
+silent_try_convert/try_int/try_float, drop_multiple_columns, explode_df_from_multivalue_columns)
+plus set_seed (moved here from torch_utils.py -- see torch_utils.set_seed for the torch-aware
+version that also seeds CUDA/cuDNN); the rest of misc.py had no test coverage before this and
+is out of scope for this change.
 """
 
+import random
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -14,11 +18,24 @@ from pylbsr.misc import (
     drop_multiple_columns,
     explode_df_from_multivalue_columns,
     make_experiment_outputdir,
+    set_seed,
     silent_try_convert,
     slice_range_overlapping,
     try_float,
     try_int,
 )
+
+
+def test_set_seed_makes_random_and_numpy_draws_reproducible() -> None:
+    """Calling set_seed with the same value reproduces the same random/numpy draws."""
+    set_seed(42)
+    py_draw_1, np_draw_1 = random.random(), np.random.rand()
+
+    set_seed(42)
+    py_draw_2, np_draw_2 = random.random(), np.random.rand()
+
+    assert py_draw_1 == py_draw_2
+    assert np_draw_1 == np_draw_2
 
 
 def test_slice_range_overlapping_tiles_the_full_range() -> None:

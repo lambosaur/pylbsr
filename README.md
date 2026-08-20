@@ -44,5 +44,5 @@ only to work on it:
 pixi install        # dev environment (linting, type-checking, tests) — the default
 pixi run test        # run the test suite
 pixi install -e bare  # no dev extras, for sanity-checking a plain install
-pixi install -e ml    # adds torch (heavy; opt-in only)
+pixi install -e torch  # adds torch (heavy; opt-in only)
 ```

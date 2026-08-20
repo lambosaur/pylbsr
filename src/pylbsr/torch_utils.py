@@ -2,9 +2,6 @@
 
 import logging
 import os
-import random
-
-import numpy as np
 
 try:
     import torch
@@ -13,6 +10,8 @@ except ImportError as e:
         "torch is required for pylbsr.torch_utils. Install with `pip install pylbsr[torch]`."
     ) from e
 
+from pylbsr.misc import set_seed as _set_seed_generic
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -20,8 +19,10 @@ logger.addHandler(logging.NullHandler())
 def set_seed(seed: int = 42) -> None:
     """Seed Python's `random`, numpy, and torch (CPU + all CUDA devices) for reproducibility.
 
-    Also configures cuDNN/torch for deterministic algorithm selection, at some performance
-    cost -- appropriate for reproducible experiments, not tuned for training throughput.
+    Calls `pylbsr.misc.set_seed` first (random + numpy), then seeds torch and configures
+    cuDNN/torch for deterministic algorithm selection, at some performance cost -- appropriate
+    for reproducible experiments, not tuned for training throughput. If you don't need torch,
+    use `pylbsr.misc.set_seed` directly instead of pulling in this module's torch dependency.
 
     Args:
         seed: Seed value applied to every RNG.
@@ -29,14 +30,13 @@ def set_seed(seed: int = 42) -> None:
     # Required by cuBLAS when torch.use_deterministic_algorithms(True) is active
     # on CUDA < 12.x; harmless on newer stacks. Must be set before cuBLAS init.
     os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
-    random.seed(seed)
-    np.random.seed(seed)
+    _set_seed_generic(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)  # no-op if CUDA isn't available
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.use_deterministic_algorithms(True)
-    logger.info("Seed set to %d", seed)
+    logger.info("Seed set to %d (+ torch/CUDA/cuDNN)", seed)
 
 
 dtype_str_map = {

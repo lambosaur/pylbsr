@@ -7,6 +7,7 @@ import glob
 import gzip
 import logging
 import os
+import random
 import shutil
 import string
 import tempfile
@@ -273,6 +274,23 @@ def no_scientific_notation(precision: int = 6) -> Generator[None, None, None]:
         # Restore old settings
         np.set_printoptions(**old_np_opts)
         pd.set_option("display.float_format", old_pd_fmt)
+
+
+def set_seed(seed: int = 42) -> None:
+    """Seed Python's `random` and numpy's global RNG for reproducibility.
+
+    Covers stdlib `random` and numpy's legacy global RNG -- e.g. seaborn's jitter/strip-plot
+    offsets, `DataFrame.sample`, `np.random.choice`, or anything else drawing from either of
+    these without its own explicit `Generator` instance. For torch-based reproducibility
+    (including CUDA/cuDNN determinism), use `pylbsr.torch_utils.set_seed` instead, which
+    calls this plus seeds torch.
+
+    Args:
+        seed: Seed value applied to both RNGs.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    logger.info("Seed set to %d", seed)
 
 
 def slice_range_overlapping(

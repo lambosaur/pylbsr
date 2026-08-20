@@ -1,8 +1,9 @@
 """Tests for torch_utils.set_seed.
 
-Only covers set_seed -- the function newly moved here (from misc.py) and completed as part of
-the ml/ml_stats restructuring; the rest of torch_utils.py (select_gpu, get_device) predates
-this change and had no test coverage before it, out of scope here. Requires the `torch` extra.
+Only covers set_seed -- newly completed here to also seed torch/CUDA/cuDNN, on top of the
+random/numpy seeding it delegates to pylbsr.misc.set_seed (see test_misc.py for that half);
+the rest of torch_utils.py (select_gpu, get_device) predates this change and had no test
+coverage before it, out of scope here. Requires the `torch` extra.
 """
 
 import os
@@ -10,13 +11,17 @@ import os
 import numpy as np
 import pytest
 
-torch = pytest.importorskip("torch")
+pytest.importorskip("torch")
+
+import torch
 
 from pylbsr.torch_utils import set_seed
 
 
 def test_set_seed_makes_python_numpy_and_torch_rngs_reproducible() -> None:
-    """Calling set_seed with the same value reproduces the same draws from all three RNGs."""
+    """set_seed reproduces the same draws from all three RNGs (random/numpy via misc.set_seed,
+    plus torch here).
+    """
     import random
 
     set_seed(123)

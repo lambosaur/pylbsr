@@ -13,20 +13,13 @@ pylbsr = { path = ".", editable = true }
 [feature.dev.pypi-dependencies]
 pylbsr = { path = ".", editable = true, extras = ["dev"] }
 
-[feature.ml.pypi-dependencies]
-pylbsr = { path = ".", editable = true, extras = ["ml"] }
-scikit-learn = ">=1.3, <2"
-
-[feature.ml_stats.pypi-dependencies]
-pylbsr = { path = ".", editable = true, extras = ["ml_stats"] }
-goatools = ">=1.6, <2"
-statsmodels = ">=0.14.6, <0.15"
+[feature.torch.pypi-dependencies]
+pylbsr = { path = ".", editable = true, extras = ["torch"] }
 
 [environments]
 default = { features = ["dev"], solve-group = "default" }
 bare = { solve-group = "default" }
-ml = { features = ["ml"], solve-group = "default" }
-ml-stats = { features = ["ml_stats"], solve-group = "default" }
+torch = { features = ["torch"], solve-group = "default" }
 
 [tasks]
 test = "pytest"

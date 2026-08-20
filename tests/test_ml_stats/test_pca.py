@@ -1,7 +1,4 @@
-"""Tests for ml.pca -- PCA diagnostic plots.
-
-Requires the `ml` extra (scikit-learn); skipped entirely if it's not installed.
-"""
+"""Tests for ml_stats.pca -- PCA diagnostic plots."""
 
 import matplotlib
 
@@ -9,14 +6,11 @@ matplotlib.use("Agg")
 
 import numpy as np
 import pytest
-
-pytest.importorskip("sklearn")
-
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 from sklearn.decomposition import PCA
 
-from pylbsr.ml.pca import (
+from pylbsr.ml_stats.pca import (
     dataframe_rotations,
     feature_map_factorplot,
     heatmap_pca_features_to_pc,

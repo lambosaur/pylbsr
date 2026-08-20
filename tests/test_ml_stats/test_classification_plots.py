@@ -1,8 +1,6 @@
-"""Tests for ml.roc_prc's classification-evaluation additions: evaluate_classifier_preds,
+"""Tests for ml_stats.roc_prc's classification-evaluation additions: evaluate_classifier_preds,
 plot_confusion_matrix, plot_classification_evaluation, quality_classification_plots,
 plot_predproba_distributions, separability_plots.
-
-Requires the `ml` extra (scikit-learn); skipped entirely if it's not installed.
 """
 
 import matplotlib
@@ -13,13 +11,10 @@ import warnings
 
 import numpy as np
 import pytest
-
-pytest.importorskip("sklearn")
-
 import sklearn.metrics
 from matplotlib.figure import Figure
 
-from pylbsr.ml.roc_prc import (
+from pylbsr.ml_stats.roc_prc import (
     Clf_scores,
     ListPRCresults,
     PRCresults,
