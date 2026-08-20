@@ -72,7 +72,7 @@ def test_calculate_pooled_var_treats_single_sample_variance_as_zero() -> None:
 def test_calculate_effect_size_requires_selected_others_columns() -> None:
     """A mean_values_df without exactly ['selected', 'others'] columns is rejected."""
     bad_df = pd.DataFrame({"wrong": [1.0], "columns": [2.0]}, index=["feat1"])
-    with pytest.raises(AssertionError, match="selected.*others"):
+    with pytest.raises(AssertionError, match=r"selected.*others"):
         calculate_effect_size(bad_df, {"feat1": "continuous"}, pd.Series({"feat1": 1.0}))
 
 
@@ -87,7 +87,7 @@ def test_calculate_effect_size_continuous_feature_is_pooled_var_normalized_diff(
 
 
 def test_calculate_effect_size_binary_feature_uses_cohen_phi() -> None:
-    """For a binary feature, effect size is the Cohen's phi difference, not the raw proportion diff."""
+    """For a binary feature, effect size is Cohen's phi difference, not the raw proportion diff."""
     mean_values = pd.DataFrame({"selected": [0.8], "others": [0.2]}, index=["feat1"])
     pooled_var = pd.Series({"feat1": 1.0})  # unused for binary features
 

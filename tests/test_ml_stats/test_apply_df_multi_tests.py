@@ -10,7 +10,7 @@ import pytest
 
 pytest.importorskip("statsmodels")
 
-from pylbsr.ml_stats.group_comparison import apply_df_multi_tests  # noqa: E402
+from pylbsr.ml_stats.group_comparison import apply_df_multi_tests
 
 RNG = np.random.default_rng(42)
 
