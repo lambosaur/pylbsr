@@ -1,16 +1,20 @@
 """Matplotlib/seaborn styling and color helpers."""
 
 import colorsys
+import math
 import zlib
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 import matplotlib as mpl
 import matplotlib.colors
 import matplotlib.font_manager
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
 from matplotlib import rc
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable  # noqa: F401
 
 
@@ -149,3 +153,99 @@ def make_categorical_palette(category_ids: Iterable[Any], palette: str = "tab20"
     sorted_ids = sorted(category_ids)
     colors = sns.color_palette(palette=palette, n_colors=len(sorted_ids))
     return dict(zip(sorted_ids, [mpl.colors.rgb2hex(c) for c in colors]))
+
+
+def plot_resizelabel(label: str, separator: str = " ", max_len: int = 20) -> str:
+    """Insert a newline roughly halfway through a long, multi-token label.
+
+    Only wraps if `label` is longer than `max_len` and has at least 4 tokens (3
+    occurrences of `separator`) -- short or single-word labels are left untouched.
+
+    Args:
+        label: The label to (maybe) wrap.
+        separator: Token separator, e.g. `" "`.
+        max_len: Labels no longer than this are left untouched.
+
+    Returns:
+        `label`, with a newline inserted at the token roughly halfway through if it
+        was wrapped, otherwise unchanged.
+    """
+    if len(label) > max_len and label.count(separator) >= 3:
+        tokens = label.split(separator)
+        mid = math.ceil(len(tokens) / 2)
+        return separator.join(tokens[:mid]) + "\n" + separator.join(tokens[mid:])
+    return label
+
+
+def create_regular_grid_axes(
+    n_tot: int, n_cols: int, height_row: float, width: float
+) -> tuple[Figure, list[Axes]]:
+    """Create a figure with `n_tot` axes laid out in a grid of up to `n_cols` columns.
+
+    Args:
+        n_tot: Number of axes to create.
+        n_cols: Maximum number of axes per row.
+        height_row: Figure height per row, in inches.
+        width: Figure width, in inches.
+
+    Returns:
+        `(fig, axs)`, `axs` in row-major reading order (left-to-right, top-to-bottom).
+    """
+    n_rows = math.ceil(n_tot / n_cols)
+    fig = plt.figure(figsize=(width, height_row * n_rows))
+    axs = [fig.add_subplot(n_rows, n_cols, pos) for pos in range(1, n_tot + 1)]
+    return (fig, axs)
+
+
+def bin_to_labels(
+    series: pd.Series, thresholds: Sequence[float], labels: Sequence[str], default: str = ""
+) -> pd.Series:
+    """Map each value to the label of the tightest threshold it satisfies (value < threshold).
+
+    Args:
+        series: Numeric values to label.
+        thresholds: Threshold values; order doesn't matter -- internally sorted so the
+            smallest (tightest) satisfied threshold's label wins over looser ones.
+        labels: One label per threshold, same length as `thresholds`, in the same order
+            (i.e. `labels[i]` goes with `thresholds[i]`).
+        default: Label used where no threshold is satisfied.
+
+    Returns:
+        One label per value in `series`.
+
+    Example:
+        >>> bin_to_labels(
+        ...     pd.Series([0.2, 0.03, 0.005, 0.0005]), [0.05, 0.01, 0.001], ["*", "**", "***"]
+        ... ).tolist()
+        ['', '*', '**', '***']
+    """
+    assert len(thresholds) == len(labels), "thresholds and labels must be the same length"
+    # Loosest threshold first, so each subsequent (tighter) match overrides it.
+    ordered = sorted(zip(thresholds, labels), reverse=True)
+
+    result = pd.Series(default, index=series.index)
+    for threshold, label in ordered:
+        result = result.where(series >= threshold, label)
+    return result
+
+
+def pval_stars(
+    pvals: pd.Series,
+    thresholds: Sequence[float] = (0.05, 0.01, 0.001),
+    labels: Sequence[str] = ("*", "**", "***"),
+) -> pd.Series:
+    """Convert p-values to significance-star labels.
+
+    Note: reducing a p-value to a star rating is generally discouraged in modern
+    statistical practice (it discards effect size and the exact p-value) -- kept here
+    for convenience/compatibility with older plots, not as an endorsement.
+
+    Args:
+        pvals: P-values to label.
+        thresholds: Significance thresholds.
+        labels: One label per threshold, same order (e.g. `"*"` for the loosest).
+
+    Returns:
+        One label per p-value (`""` if none of the thresholds are met).
+    """
+    return bin_to_labels(pvals, thresholds, labels)
