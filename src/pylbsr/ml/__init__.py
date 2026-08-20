@@ -1,5 +1,9 @@
 """Machine-learning result reformatting and diagnostic plotting."""
 
+from .clustering import (
+    hierarchical_clustering_cut_tree as hierarchical_clustering_cut_tree,
+    plot_silhouettes as plot_silhouettes,
+)
 from .pca import (
     dataframe_rotations as dataframe_rotations,
     feature_map_factorplot as feature_map_factorplot,
