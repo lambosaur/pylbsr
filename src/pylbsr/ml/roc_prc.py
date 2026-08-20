@@ -1,4 +1,4 @@
-"""Misc utils for machine learning."""
+"""ROC and precision-recall curve results, for binary classifier evaluation."""
 
 import warnings
 from typing import Any
