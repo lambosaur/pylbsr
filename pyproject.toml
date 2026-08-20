@@ -68,6 +68,7 @@ ml = [
 
 ml_stats = [
     "goatools >=1.6,<2",
+    "statsmodels >=0.14.6,<0.15",
 ]
 
 
