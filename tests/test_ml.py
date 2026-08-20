@@ -1,11 +1,10 @@
-"""Tests for pylbsr.ml's deprecated top-level re-export shim (ml/__init__.py's __getattr__).
+"""Tests for pylbsr.ml -- the deprecated top-level re-export shim (ml.py's __getattr__).
 
-Requires the `ml` extra (scikit-learn), since the shim resolves into ml.roc_prc.
+No optional extra required: scikit-learn is a core dependency (see pyproject.toml), since
+none of ml_stats' content needs torch.
 """
 
 import pytest
-
-pytest.importorskip("sklearn")
 
 import pylbsr.ml
 
@@ -20,7 +19,7 @@ def test_deprecated_names_still_resolve_and_warn(name: str) -> None:
     with pytest.warns(DeprecationWarning, match=f"pylbsr.ml.{name} is deprecated"):
         resolved = getattr(pylbsr.ml, name)
 
-    from pylbsr.ml import roc_prc
+    from pylbsr.ml_stats import roc_prc
 
     assert resolved is getattr(roc_prc, name)
 
@@ -46,10 +45,10 @@ def test_unknown_attribute_still_raises_attributeerror() -> None:
         _ = pylbsr.ml.NotARealThing
 
 
-def test_pca_and_clustering_are_not_reachable_at_package_level() -> None:
+def test_pca_and_clustering_are_not_reachable_via_the_shim() -> None:
     """pca/clustering were never part of the deprecated shim -- they need explicit submodule
-    imports (from pylbsr.ml.pca import ..., from pylbsr.ml.clustering import ...), matching
-    bio/__init__.py's existing convention of not eagerly re-exporting every submodule.
+    imports (from pylbsr.ml_stats.pca import ..., from pylbsr.ml_stats.clustering import ...).
+    pylbsr.ml only ever special-cased the four original ROC/PRC names.
     """
     with pytest.raises(AttributeError):
         _ = pylbsr.ml.plot_cumulative_variance_pca
