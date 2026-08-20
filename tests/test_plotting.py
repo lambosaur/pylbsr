@@ -7,12 +7,18 @@ out of scope for this change.
 
 import math
 
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from pylbsr.plotting import (
     bin_to_labels,
     create_regular_grid_axes,
     make_categorical_palette,
+    patch_labelling,
     plot_resizelabel,
     pval_stars,
 )
@@ -100,3 +106,40 @@ def test_pval_stars_default_thresholds() -> None:
     """pval_stars is bin_to_labels pre-bound to the standard */**/*** thresholds."""
     result = pval_stars(pd.Series([0.5, 0.04, 0.005, 0.0001]))
     assert result.tolist() == ["", "*", "**", "***"]
+
+
+def test_patch_labelling_vertical_positive_bar_places_label_above() -> None:
+    """A vertical bar with a positive value gets its label above the bar (va="bottom")."""
+    _fig, ax = plt.subplots()
+    (bar,) = ax.bar(["a"], [5])
+
+    patch_labelling(ax, bar, "5")
+
+    annotations = [c for c in ax.get_children() if isinstance(c, matplotlib.text.Annotation)]
+    assert len(annotations) == 1
+    assert annotations[0].get_text() == "5"
+    assert annotations[0].get_verticalalignment() == "bottom"
+
+
+def test_patch_labelling_vertical_negative_bar_places_label_below() -> None:
+    """A vertical bar with a negative value gets its label below the bar (va="top")."""
+    _fig, ax = plt.subplots()
+    (bar,) = ax.bar(["a"], [-5])
+
+    patch_labelling(ax, bar, "-5")
+
+    annotations = [c for c in ax.get_children() if isinstance(c, matplotlib.text.Annotation)]
+    assert annotations[0].get_verticalalignment() == "top"
+
+
+def test_patch_labelling_does_not_mutate_default_textparams_across_calls() -> None:
+    """The textparams=None default must not become a shared mutable dict across calls."""
+    _fig, ax = plt.subplots()
+    (bar1,) = ax.bar(["a"], [1])
+    (bar2,) = ax.bar(["b"], [2])
+
+    patch_labelling(ax, bar1, "1")
+    patch_labelling(ax, bar2, "2")  # would fail oddly if the first call's state leaked
+
+    annotations = [c for c in ax.get_children() if isinstance(c, matplotlib.text.Annotation)]
+    assert {a.get_text() for a in annotations} == {"1", "2"}

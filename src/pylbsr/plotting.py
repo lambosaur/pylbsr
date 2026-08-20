@@ -249,3 +249,76 @@ def pval_stars(
         One label per p-value (`""` if none of the thresholds are met).
     """
     return bin_to_labels(pvals, thresholds, labels)
+
+
+def patch_labelling(
+    ax: Axes,
+    patch: mpl.patches.Rectangle,
+    label: str,
+    vertical: bool = True,
+    space: float = 3,
+    shift: float = 0,
+    revert: bool = False,
+    textparams: dict[str, Any] | None = None,
+) -> None:
+    """Annotate one bar of a bar plot with a text label just past its end.
+
+    Args:
+        ax: Axes the bar plot was drawn on.
+        patch: The bar (one entry of `ax.patches`) to label.
+        label: Text to draw.
+        vertical: Whether the bars are vertical (value on the y-axis) or horizontal.
+        space: Points between the bar's end and the label.
+        shift: Extra shift along the bar's own axis (x for vertical, y for horizontal),
+            e.g. to de-collide labels on grouped/dodged bars.
+        revert: For horizontal bars, force the label to the left of the bar's end
+            regardless of sign (vertical bars already do this automatically for
+            negative values).
+        textparams: Extra kwargs forwarded to `ax.annotate`.
+
+    Example:
+        >>> for tick_label, patch in zip(ax.get_xticklabels(), ax.patches):  # doctest: +SKIP
+        ...     shift = patch.get_width() / 4
+        ...     patch_labelling(ax, patch, label_for[tick_label.get_text()], shift=shift)
+    """
+    if textparams is None:
+        textparams = {}
+
+    if vertical:
+        y_value = patch.get_height()
+        x_value = patch.get_x() + patch.get_width() / 2 + shift
+
+        ha = "center"
+        rotation: float = 0
+
+        va = "bottom"
+        if y_value < 0:
+            space *= -1
+            va = "top"
+
+        xytext: tuple[float, float] = (0, space)
+    else:
+        x_value = patch.get_width()
+        y_value = patch.get_y() + patch.get_height() / 2 + shift
+
+        ha = "center"
+        va = "center"
+        rotation = -90
+
+        if x_value < 0 or revert:
+            space *= -1
+            rotation = 90
+
+        xytext = (space, 0)
+
+    ax.annotate(
+        label,
+        (x_value, y_value),
+        xytext=xytext,
+        xycoords="data",
+        textcoords="offset points",
+        ha=ha,
+        va=va,
+        rotation=rotation,
+        **textparams,
+    )
