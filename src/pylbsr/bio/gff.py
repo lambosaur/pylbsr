@@ -1,5 +1,6 @@
 """Module for reading and writing GFF3 files with validation using Pandera."""
 
+import collections
 import os
 
 # Disable automatic backend detection for pandera that loads dask.
@@ -324,3 +325,124 @@ def get_transcript_boundaries_from_gff(gff: pd.DataFrame) -> GenomicInterval:
             strand=gff.iloc[0]["strand"],
         )
         return transcript_boundaries
+
+
+GTF_COLUMNS = (
+    "seqname",
+    "source",
+    "feature",
+    "start",
+    "end",
+    "score",
+    "strand",
+    "frame",
+    "attribute",
+)
+
+GTF_DEFAULT_VALUES: dict[str, object] = {
+    "source": ".",
+    "strand": ".",  # could also be '+'
+    "frame": ".",  # could also be 0
+    "attribute": ".",
+    "feature": ".",
+    "score": 0,
+}
+
+
+def bed2gtf(  # noqa: C901 -- cohesive column-mapping/validation pipeline, covered by tests
+    table_bed: pd.DataFrame,
+    map_columns_bed_to_gtf: dict[str, str] | None = None,
+    default_values: dict[str, object] | None = None,
+) -> pd.DataFrame:
+    """Convert a BED-formatted table to a GTF-formatted table.
+
+    The minimal expected columns in `table_bed` are `chrom`, `start`, `end` (0-based
+    coordinates). `chrom` is automatically mapped to `seqname`. Any other column not
+    named after a GTF column has its content concatenated into the GTF `attribute`
+    column as `key "value"; key "value"` pairs; provide `map_columns_bed_to_gtf` to
+    map a BED column directly onto a GTF column instead (e.g. `name` -> `feature`).
+    GTF columns absent from the result are filled from `GTF_DEFAULT_VALUES`
+    (overridable via `default_values`).
+
+    Args:
+        table_bed: Table with at least `chrom`, `start`, `end` columns (0-based).
+        map_columns_bed_to_gtf: Maps BED column names onto GTF column names.
+        default_values: Overrides for `GTF_DEFAULT_VALUES`.
+
+    Returns:
+        A GTF-formatted table (1-based `start`), with columns `GTF_COLUMNS` in order.
+
+    Raises:
+        ValueError: `table_bed` is missing `chrom`/`start`/`end`, `map_columns_bed_to_gtf`
+            renames a column onto one that's already present under its own name, or a
+            required GTF column ends up with neither a source column nor a default value.
+    """
+    bed_to_gtf_columns = {"chrom": "seqname", "start": "start", "end": "end"}
+
+    default_gtf_values = GTF_DEFAULT_VALUES.copy()
+    if default_values is not None:
+        default_gtf_values.update(default_values)
+
+    missing_cols = [c for c in bed_to_gtf_columns if c not in table_bed.columns]
+    if missing_cols:
+        raise ValueError(f"Missing minimal BED columns: {missing_cols}")
+
+    if map_columns_bed_to_gtf is None:
+        map_columns_bed_to_gtf = {}
+
+    # Sanity check: collisions between already-present GTF-named columns and renamings.
+    # Apply the renaming first, in case a conflict is resolved by another renaming.
+    bed_to_gtf_columns.update(map_columns_bed_to_gtf)
+    renamed_columns = pd.Series([bed_to_gtf_columns.get(c, c) for c in table_bed.columns])
+    collisions = renamed_columns.value_counts().loc[lambda s: s > 1]
+    if len(collisions) > 0:
+        conflicts = {k: v for k, v in bed_to_gtf_columns.items() if v in collisions.index}
+        raise ValueError(f"Conflict between renamed columns and already-present columns: {conflicts}")
+
+    # Now that the mapping is confirmed collision-free, add the remaining BED columns
+    # that already happen to match a GTF column name.
+    for col in GTF_COLUMNS:
+        if col in table_bed.columns and col not in bed_to_gtf_columns:
+            bed_to_gtf_columns[col] = col
+
+    # Reverse mapping (GTF column -> BED column(s)); anything not explicitly mapped
+    # above is accumulated under "attribute".
+    gtf_to_bed_columns: dict[str, list[str]] = collections.defaultdict(list)
+    for col in table_bed.columns:
+        gtf_to_bed_columns[bed_to_gtf_columns.get(col, "attribute")].append(col)
+
+    mapped_columns: dict[str, str | list[str]] = {
+        k: (v[0] if len(v) == 1 and k != "attribute" else v) for k, v in gtf_to_bed_columns.items()
+    }
+    stray_lists = [v for k, v in mapped_columns.items() if k != "attribute" and isinstance(v, list)]
+    if stray_lists:
+        raise ValueError(f"Unexpected list of columns built from the input BED: {stray_lists}")
+
+    gtf_table = table_bed.rename(columns=bed_to_gtf_columns).copy()
+
+    # "attribute" is absent from gtf_to_bed_columns entirely (not just empty) whenever every
+    # BED column mapped directly onto a GTF column -- .get(..., []) instead of [...] avoids a
+    # KeyError in that case.
+    attribute_source_columns = mapped_columns.get("attribute", [])
+    if attribute_source_columns:
+
+        def format_row_to_attribute(row: pd.Series) -> str:
+            return "; ".join(f'{k} "{v}"' for k, v in row[attribute_source_columns].items())
+
+        gtf_table["attribute"] = table_bed.apply(format_row_to_attribute, axis=1).values
+
+    for col, default_v in default_gtf_values.items():
+        if col not in gtf_table.columns and col in GTF_COLUMNS:
+            gtf_table[col] = default_v
+
+    missing_gtf_cols = [c for c in GTF_COLUMNS if c not in gtf_table.columns]
+    if missing_gtf_cols:
+        raise ValueError(f"Missing columns in the GTF-converted table: {missing_gtf_cols}")
+
+    gtf_table = gtf_table.loc[:, list(GTF_COLUMNS)].copy()
+
+    # BED start is 0-based; GTF start is 1-based. BED's half-open end already equals
+    # GTF's inclusive end numerically, so only start needs shifting.
+    gtf_table["start"] = gtf_table["start"] + 1
+
+    return gtf_table

@@ -22,6 +22,7 @@ dependencies = [
     "biopython >=1.83",
     #"dask>=2023.1.0",
     "dotmap >=1.0.0,<2",
+    "goatools >=1.6,<2",
     #"jupyterlab>=3.4",
     "liftover >=1.3.3,<2.0.0",
     "matplotlib>=3.5",
@@ -36,8 +37,10 @@ dependencies = [
     "pybigwig >=0.3.22,<0.4",
     "pyfaidx >=0.8,<1.0",
     "pysam >=0.23.3",
+    "scikit-learn >=1.3,<2",
     "scipy>=1.9",
     "seaborn>=0.12",
+    "statsmodels >=0.14.6,<0.15",
     "upsetplot>=0.9",
     "tqdm >=4.67.1,<5",
     "logomaker >=0.8",
@@ -60,10 +63,11 @@ dev = [
     "mkdocs-material >=9.6,<10.0",
 ]
 
-ml = [
+# The only genuinely heavy/opt-in dependency: torch pulls in ~4.5GB of CUDA/triton
+# libraries by default. Nothing else in pylbsr needs torch -- see torch_utils.py.
+torch = [
     #"tensorflow >=2.16",
     "torch >=2.5",
-    "scikit-learn >=1.3,<2",
 ]
 
 
