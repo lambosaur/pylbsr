@@ -46,3 +46,15 @@ pixi run test        # run the test suite
 pixi install -e bare  # no dev extras, for sanity-checking a plain install
 pixi install -e torch  # adds torch (heavy; opt-in only)
 ```
+
+### Optional extras
+
+| Extra | Adds | Needed for |
+|---|---|---|
+| `torch` | PyTorch | `pylbsr.torch_utils` |
+| `rna` | ViennaRNA | `pylbsr.bio.rna_plot` (secondary-structure drawings; demo: `examples/rna_plot_demo.ipynb`) |
+
+```sh
+pip install "pylbsr[rna]"
+pixi install -e rna   # dev environment + ViennaRNA from bioconda
+```

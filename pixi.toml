@@ -16,10 +16,16 @@ pylbsr = { path = ".", editable = true, extras = ["dev"] }
 [feature.torch.pypi-dependencies]
 pylbsr = { path = ".", editable = true, extras = ["torch"] }
 
+# ViennaRNA from bioconda (not the PyPI wheel): it also ships the RNAplot CLI, which
+# pylbsr.bio.rna_plot uses for the RNApuzzler layout of large structures.
+[feature.rna.dependencies]
+viennarna = ">=2.6"
+
 [environments]
 default = { features = ["dev"], solve-group = "default" }
 bare = { solve-group = "default" }
 torch = { features = ["torch"], solve-group = "default" }
+rna = { features = ["dev", "rna"], solve-group = "default" }
 
 [tasks]
 test = "pytest"
