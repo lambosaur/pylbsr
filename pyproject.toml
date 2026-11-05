@@ -70,6 +70,11 @@ torch = [
     "torch >=2.5",
 ]
 
+# ViennaRNA, for pylbsr.bio.rna_plot only. The conda package (bioconda viennarna) works too.
+rna = [
+    "ViennaRNA >=2.6",
+]
+
 
 [tool.setuptools.packages.find]
 
@@ -157,6 +162,8 @@ unfixable = [
 # Test files: names are self-documenting, and tests always return None -- docstrings and
 # return-type annotations on every test method are pure noise there, unlike in src/.
 "tests/**" = ["D", "ANN"]
+# Demo notebooks: small helper functions shown inline, not API -- same reasoning as tests.
+"examples/**" = ["D", "ANN"]
 
 # One-record-per-line GFF/genomic-coordinate fixture tables -- wrapping these would make
 # them harder to read, not easier.
